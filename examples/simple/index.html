@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+	<head>
+
+	</head>
+	<body>
+		<script type="text/javascript" src="../../js/jbb.min.js"></script>
+		<script>
+			Graphics(800, 600);
+			ClsColor(30, 60, 90);
+			
+			var ship = LoadImage("../media/ship.png");
+			console.log(ship);
+			function main(){
+				Cls();
+				
+				Color(255, 255, 255);
+				Rect(20, 20, 100, 100, 0);
+
+				Color(255, 200, 0);
+				Line(0, 0, GraphicsWidth(), GraphicsHeight());
+			}
+		</script>
+	</body>
+</html>
