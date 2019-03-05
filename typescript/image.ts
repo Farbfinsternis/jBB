@@ -2,32 +2,79 @@ namespace jBB{
 	export class jImage{
 		private path:string;
 		private img:HTMLImageElement = new Image();
+		private imgData;
 		private loaded:boolean = false;
-		private context:jBB.Core;
-		private frames:number = 1;
-		private frameWidth:number;
-		private frameHeight:number;
+		private ctx:Core;
+		private frame = { num : 1, width : 0, height: 0, start: 1, current: 1 };
+		private hndl = { x : 0, y : 0 };
+		private autoMidHandle:boolean = false;
 
-		constructor(context:jBB.Core)
-		constructor(path:string, context:jBB.Core)
-		constructor(width:number, height:number, context:jBB.Core)
-		constructor(arg01?:any, arg02?:any, arg03?:any){
-			if(arg01 instanceof jBB.Core){
-				this.context = arg01;
-			}else if(typeof(arg01) === "string"){
+		constructor(width:number, height:number, context:Core)
+		constructor(path:string, cellWidth:number, cellHeight:number, startCell:number, cellCount:number, context:Core)
+		constructor(arg01?:any, arg02?:any, arg03?:any, arg04?:any, arg05?:any, arg06?:any){
+			this.ctx = arg06;
+
+			this.autoMidHandle = this.ctx.data.global.autoMidHandle;
+
+			if(typeof(arg01) === "string"){
 				// load image
 				this.img.src = arg01;
-				this.context = arg02;
+
+				if(typeof(arg02) == "number") this.frame.width = arg02;
+				if(typeof(arg03) == "number") this.frame.height = arg03;
+				if(typeof(arg04) == "number") this.frame.start = arg04;
+				if(typeof(arg05) == "number") this.frame.num = arg05;
+
 				this.img.onload = (data) => {
 					this.loaded = true;
+					if(!this.frame.width) this.frame.width = this.img.width;
+					if(!this.frame.height) this.frame.height = this.img.height;
 				}
 
 			}else if(typeof(arg01) === "number"){
 				// create a new image
 				this.img.width = arg01;
 				this.img.height = arg01;
-				this.context = arg03;
 			}
+		}
+
+		public draw = (x:number, y:number) => {
+			if(this.loaded){
+				var dx:number = x; var dy:number = y;
+				if(this.autoMidHandle){ dx -= this.frame.width / 2; dy -= this.frame.height / 2; }
+
+				dx -= this.hndl.x; dy -= this.hndl.y;
+				var sx:number = 0; var sy:number = 0;
+
+				this.ctx.data.canvas.ctx.drawImage(
+					this.img, 
+					sx, 
+					sy, 
+					this.frame.width, 
+					this.frame.height, 
+					dx, 
+					dy,
+					this.frame.width,
+					this.frame.height
+				);
+			}
+		}
+
+		public handle = (x:number, y:number) => {
+			if(x === undefined){
+				return this.hndl;
+			}else{
+				this.hndl = { x : x, y : y };
+			}
+		}
+
+		public imageDataObject = ():ImageData => {
+			// create image data
+			this.ctx.clearBackbuffer();
+			this.ctx.data.canvas.bbf.drawImage(this.img, 0, 0);
+			this.imgData = this.ctx.data.canvas.bbf.getImageData(0, 0, this.img.width, this.img.height);
+
+			return this.imgData;
 		}
 	}
 }

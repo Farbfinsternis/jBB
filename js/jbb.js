@@ -35,44 +35,130 @@ var jBB;
 })(jBB || (jBB = {}));
 var jBB;
 (function (jBB) {
+    var jFont = /** @class */ (function () {
+        function jFont(path, name, context) {
+            var _this = this;
+            this.set = function (size, bold, italic, weight) {
+                if (size === void 0) { size = 16; }
+                if (bold === void 0) { bold = false; }
+                if (italic === void 0) { italic = false; }
+                if (weight === void 0) { weight = 0; }
+                var data = "";
+                if (bold == true) {
+                    if (weight > 0) {
+                        data += weight;
+                    }
+                    else {
+                        data += "bold ";
+                    }
+                }
+                if (italic == true)
+                    data += "oblique ";
+                _this.ctx.data.canvas.ctx.font = data + size + "px " + _this.name;
+            };
+            this.draw = function (text, x, y) {
+                if (x === void 0) { x = 0; }
+                if (y === void 0) { y = 0; }
+                _this.ctx.data.canvas.ctx.fillStyle = _this.ctx.data.color.draw.rgba();
+                _this.ctx.data.canvas.ctx.fillText(text, x, y);
+            };
+            this.ctx = context;
+            this.name = name;
+            var css = document.createElement("style");
+            css.type = "text/css";
+            css.innerHTML = "@font-face{ font-family: '" + this.name + "'; src: url(" + path + "); }";
+            document.body.appendChild(css);
+        }
+        return jFont;
+    }());
+    jBB.jFont = jFont;
+})(jBB || (jBB = {}));
+var jBB;
+(function (jBB) {
     var jImage = /** @class */ (function () {
-        function jImage(arg01, arg02, arg03) {
+        function jImage(arg01, arg02, arg03, arg04, arg05, arg06) {
             var _this = this;
             this.img = new Image();
             this.loaded = false;
-            this.frames = 1;
-            if (arg01 instanceof jBB.Core) {
-                this.context = arg01;
-            }
-            else if (typeof (arg01) === "string") {
+            this.frame = { num: 1, width: 0, height: 0, start: 1, current: 1 };
+            this.hndl = { x: 0, y: 0 };
+            this.autoMidHandle = false;
+            this.draw = function (x, y) {
+                if (_this.loaded) {
+                    var dx = x;
+                    var dy = y;
+                    if (_this.autoMidHandle) {
+                        dx -= _this.frame.width / 2;
+                        dy -= _this.frame.height / 2;
+                    }
+                    dx -= _this.hndl.x;
+                    dy -= _this.hndl.y;
+                    var sx = 0;
+                    var sy = 0;
+                    _this.ctx.data.canvas.ctx.drawImage(_this.img, sx, sy, _this.frame.width, _this.frame.height, dx, dy, _this.frame.width, _this.frame.height);
+                }
+            };
+            this.handle = function (x, y) {
+                if (x === undefined) {
+                    return _this.hndl;
+                }
+                else {
+                    _this.hndl = { x: x, y: y };
+                }
+            };
+            this.imageDataObject = function () {
+                // create image data
+                _this.ctx.clearBackbuffer();
+                _this.ctx.data.canvas.bbf.drawImage(_this.img, 0, 0);
+                _this.imgData = _this.ctx.data.canvas.bbf.getImageData(0, 0, _this.img.width, _this.img.height);
+                return _this.imgData;
+            };
+            this.ctx = arg06;
+            this.autoMidHandle = this.ctx.data.global.autoMidHandle;
+            if (typeof (arg01) === "string") {
                 // load image
                 this.img.src = arg01;
-                this.context = arg02;
+                if (typeof (arg02) == "number")
+                    this.frame.width = arg02;
+                if (typeof (arg03) == "number")
+                    this.frame.height = arg03;
+                if (typeof (arg04) == "number")
+                    this.frame.start = arg04;
+                if (typeof (arg05) == "number")
+                    this.frame.num = arg05;
                 this.img.onload = function (data) {
                     _this.loaded = true;
+                    if (!_this.frame.width)
+                        _this.frame.width = _this.img.width;
+                    if (!_this.frame.height)
+                        _this.frame.height = _this.img.height;
                 };
             }
             else if (typeof (arg01) === "number") {
                 // create a new image
                 this.img.width = arg01;
                 this.img.height = arg01;
-                this.context = arg03;
             }
         }
         return jImage;
     }());
     jBB.jImage = jImage;
 })(jBB || (jBB = {}));
+/**
+ * @preferred
+ */
 var jBB;
 (function (jBB) {
     var Core = /** @class */ (function () {
         function Core(arg01, arg02, arg03) {
             var _this = this;
             this.data = {
+                ready: false,
                 lastID: 0,
                 canvas: {
                     element: null,
                     ctx: null,
+                    bbf: null,
                     id: "",
                     x: 0,
                     y: 0,
@@ -87,7 +173,27 @@ var jBB;
                 global: {
                     autoMidHandle: false,
                     globalAlpha: 1.0
-                }
+                },
+                mouse: null,
+                keyboard: null,
+                time: new jBB.jTime(),
+                font: { current: null, default: null }
+            };
+            this.createBackbuffer = function () {
+                var bbuf = document.createElement("canvas");
+                var text = document.createTextNode("backbuffer");
+                bbuf.appendChild(text);
+                bbuf.id = _this.data.canvas.id + "-bbuf";
+                bbuf.width = _this.data.canvas.width;
+                bbuf.height = _this.data.canvas.height;
+                bbuf.style.display = "none";
+                _this.data.canvas.bbf = bbuf.getContext('2d');
+                document.body.appendChild(bbuf);
+            };
+            this.clearBackbuffer = function () {
+                _this.data.canvas.ctx.fillStyle = "rgba(0, 0, 0, 0)";
+                _this.data.canvas.ctx.setTransform(1, 0, 0, 1, 0, 0);
+                _this.data.canvas.ctx.fillRect(0, 0, _this.data.canvas.width, _this.data.canvas.height);
             };
             this.getCanvasElement = function () {
                 _this.data.canvas.element = document.getElementById(_this.data.canvas.id);
@@ -112,6 +218,26 @@ var jBB;
                 window[_this.data.mainLoop]();
                 _this.postRender();
             };
+            // ==== input ====
+            // ---- mouse ----
+            this.mouseX = function () { return _this.data.mouse.x; };
+            this.mouseY = function () { return _this.data.mouse.y; };
+            this.mouseDown = function (key) { return _this.data.mouse.down(key); };
+            this.mouseHit = function (key) { return _this.data.mouse.hit(key); };
+            this.flushMouse = function () { _this.data.mouse.flush(); };
+            this.getMouse = function () { return _this.data.mouse.get(); };
+            // ---- keyboard ----
+            this.keyDown = function (key) { return _this.data.keyboard.down(key); };
+            this.keyHit = function (key) { return _this.data.keyboard.hit(key); };
+            this.flushKeys = function () { _this.data.keyboard.flush(); };
+            // ==== time & random ====
+            this.milliSecs = function () {
+                return _this.data.time.milliSecs();
+            };
+            this.rand = function (min, max) {
+                return _this.data.time.rand(min, max);
+            };
+            // ==== graphics ====
             /**
              * Löscht das Canvas in der eingestellten Farbe
              */
@@ -121,7 +247,7 @@ var jBB;
                 _this.data.canvas.ctx.fillRect(0, 0, _this.data.canvas.width, _this.data.canvas.height);
             };
             /**
-             * Setzt die Löschfarbe für @cls()
+             * Setzt die Löschfarbe für [[cls]]()
              *
              * @param r - die Rotkomponente der Farbe
              * @param g - die Grünkomponente der Farbe
@@ -143,6 +269,7 @@ var jBB;
             this.graphicsHeight = function () {
                 return _this.data.canvas.height;
             };
+            // === drawing ====
             this.rect = function (x, y, width, height, filled) {
                 if (filled === void 0) { filled = true; }
                 if (filled) {
@@ -161,8 +288,40 @@ var jBB;
                 _this.data.canvas.ctx.lineTo(endX, endY);
                 _this.data.canvas.ctx.stroke();
             };
-            this.loadImage = function (path) {
-                var img = new jBB.jImage(path, _this);
+            // ==== fonts ====
+            this.loadFont = function (path, name) {
+                _this.data.font.current = new jBB.jFont(path, name, _this);
+                return _this.data.font.current;
+            };
+            this.setFont = function (font, size, bold, italic, weight) {
+                if (size === void 0) { size = 16; }
+                if (bold === void 0) { bold = false; }
+                if (italic === void 0) { italic = false; }
+                if (weight === void 0) { weight = 0; }
+                _this.data.font.current = font;
+                _this.data.font.current.set(size, bold, italic, weight);
+            };
+            this.drawText = function (txt, x, y) {
+                if (x === void 0) { x = 0; }
+                if (y === void 0) { y = 0; }
+                if (_this.data.font.current instanceof jBB.jFont) {
+                    _this.data.font.current.draw(txt, x, y);
+                }
+                else {
+                    _this.data.font.default.draw(txt, x, y);
+                }
+            };
+            // ==== images ====
+            this.autoMidHandle = function (value) {
+                _this.data.global.autoMidHandle = value;
+            };
+            this.loadImage = function (path, cellWidth, cellHeight, startCell, cellCount) {
+                if (startCell === void 0) { startCell = 1; }
+                if (cellCount === void 0) { cellCount = 1; }
+                return new jBB.jImage(path, cellWidth, cellHeight, startCell, cellCount, _this);
+            };
+            this.drawImage = function (img, x, y) {
+                img.draw(x, y);
             };
             if (typeof (arg01) == "number") {
                 // (width, height, [mainloop])
@@ -184,23 +343,98 @@ var jBB;
             }
             this.data.canvas.ctx = this.data.canvas.element.getContext('2d');
             this.data.canvas.ctx.lineWidth = 1;
+            this.data.mouse = new jBB.jMouse(this);
+            this.data.keyboard = new jBB.jKeyboard(this);
+            this.data.font.default = new jBB.jFont("", "Arial", this);
+            window.onload = function () { _this.data.ready = true; };
+            this.createBackbuffer();
             window.requestAnimationFrame(this.render);
         }
         return Core;
     }());
     jBB.Core = Core;
 })(jBB || (jBB = {}));
+var jBB;
+(function (jBB) {
+    var jKeyboard = /** @class */ (function () {
+        function jKeyboard(context) {
+            var _this = this;
+            this.saveKeyDown = function (event) { _this.keys[event.keyCode] = true; };
+            this.saveKeyUp = function (event) { _this.keys[event.keyCode] = false; };
+            this.down = function (key) { return _this.keys[key]; };
+            this.hit = function (key) {
+                var result = _this.keys[key];
+                _this.keys[key] = false;
+                return result;
+            };
+            this.flush = function () {
+                for (var index in _this.keys) {
+                    _this.keys[index] = false;
+                }
+            };
+            this.ctx = context;
+            window.onload = function () {
+                _this.ctx.data.canvas.element.onkeydown = _this.saveKeyDown;
+                _this.ctx.data.canvas.element.onkeyup = _this.saveKeyUp;
+            };
+        }
+        return jKeyboard;
+    }());
+    jBB.jKeyboard = jKeyboard;
+})(jBB || (jBB = {}));
+var jBB;
+(function (jBB) {
+    var jMouse = /** @class */ (function () {
+        function jMouse(context) {
+            var _this = this;
+            this.saveMousePos = function (event) {
+                var r = _this.ctx.data.canvas.element.getBoundingClientRect();
+                _this.x = event.clientX - r.left;
+                _this.y = event.clientY - r.top;
+            };
+            this.saveMouseDown = function (event) { _this.keys[event.button] = true; };
+            this.saveMouseUp = function (event) { _this.keys[event.button] = false; };
+            this.down = function (key) { return _this.keys[key]; };
+            this.hit = function (key) {
+                var result = _this.keys[key];
+                _this.keys[key] = false;
+                return result;
+            };
+            this.flush = function () {
+                for (var index in _this.keys) {
+                    _this.keys[index] = false;
+                }
+            };
+            this.get = function () {
+                var result = [];
+                for (var index in _this.keys) {
+                    if (_this.keys[index])
+                        result.push(Number(index));
+                }
+                return result;
+            };
+            this.ctx = context;
+            window.onload = function () {
+                _this.ctx.data.canvas.element.onmousemove = _this.saveMousePos;
+                _this.ctx.data.canvas.element.onmousedown = _this.saveMouseDown;
+                _this.ctx.data.canvas.element.onmouseup = _this.saveMouseUp;
+            };
+        }
+        return jMouse;
+    }());
+    jBB.jMouse = jMouse;
+})(jBB || (jBB = {}));
 var jBBContext = {
     context: undefined
 };
-function Graphics(width, height) {
+// ==== graphics ====
+function Graphics(width, height, mainLoop) {
     if (width === void 0) { width = 640; }
     if (height === void 0) { height = 480; }
-    jBBContext.context = new jBB.Core(width, height, 0);
+    if (mainLoop === void 0) { mainLoop = "main"; }
+    jBBContext.context = new jBB.Core(width, height, mainLoop);
 }
-function Cls() {
-    jBBContext.context.cls();
-}
+function Cls() { jBBContext.context.cls(); }
 function ClsColor(red, green, blue) {
     if (red === void 0) { red = 0; }
     if (green === void 0) { green = 0; }
@@ -214,12 +448,9 @@ function Color(red, green, blue, alpha) {
     if (alpha === void 0) { alpha = 1.0; }
     jBBContext.context.color(red, green, blue, alpha);
 }
-function GraphicsWidth() {
-    return jBBContext.context.graphicsWidth();
-}
-function GraphicsHeight() {
-    return jBBContext.context.graphicsHeight();
-}
+function GraphicsWidth() { return jBBContext.context.graphicsWidth(); }
+function GraphicsHeight() { return jBBContext.context.graphicsHeight(); }
+// ==== drawing ====
 function Rect(x, y, width, height, filled) {
     if (filled === void 0) { filled = 1; }
     var f = true;
@@ -227,9 +458,52 @@ function Rect(x, y, width, height, filled) {
         f = false;
     jBBContext.context.rect(x, y, width, height, filled);
 }
-function Line(startX, startY, endX, endY) {
-    jBBContext.context.line(startX, startY, endX, endY);
+function Line(startX, startY, endX, endY) { jBBContext.context.line(startX, startY, endX, endY); }
+// ==== fonts ====
+function LoadFont(path, name) { return jBBContext.context.loadFont(path, name); }
+function SetFont(font, size, bold, italic) {
+    if (size === void 0) { size = 16; }
+    if (bold === void 0) { bold = false; }
+    if (italic === void 0) { italic = false; }
+    jBBContext.context.setFont(font, size, bold, italic);
 }
-function LoadImage(path) {
-    return jBBContext.context.loadImage(path);
+// ==== text ====
+function DrawText(txt, x, y) {
+    if (x === void 0) { x = 0; }
+    if (y === void 0) { y = 0; }
+    jBBContext.context.drawText(txt, x, y);
 }
+// ==== images ====
+function AutoMidHandle(value) { jBBContext.context.autoMidHandle(value); }
+function LoadImage(path, cellWidth, cellHeight, startCell, cellCount) {
+    if (startCell === void 0) { startCell = 1; }
+    if (cellCount === void 0) { cellCount = 1; }
+    return jBBContext.context.loadImage(path, cellWidth, cellHeight, startCell, cellCount);
+}
+function DrawImage(img, x, y) { jBBContext.context.drawImage(img, x, y); }
+function HandleImage(img, x, y) { img.handle(x, y); }
+// ==== input ====
+// ---- mouse ----
+function MouseX() { return jBBContext.context.mouseX(); }
+function MouseY() { return jBBContext.context.mouseY(); }
+function FlushMouse() { jBBContext.context.flushMouse(); }
+function GetMouse() { return jBBContext.context.getMouse(); }
+// ---- keyboard ----
+function KeyDown(key) { return jBBContext.context.keyDown(key); }
+function KeyHit(key) { return jBBContext.context.keyHit(key); }
+function FlushKeys() { jBBContext.context.flushKeys(); }
+var jBB;
+(function (jBB) {
+    var jTime = /** @class */ (function () {
+        function jTime() {
+            this.milliSecs = function () {
+                return new Date().getTime();
+            };
+            this.rand = function (min, max) {
+                return Math.floor(Math.random() * max) + min;
+            };
+        }
+        return jTime;
+    }());
+    jBB.jTime = jTime;
+})(jBB || (jBB = {}));

@@ -4,21 +4,31 @@
 
 	</head>
 	<body>
-		<script type="text/javascript" src="../../js/jbb.min.js"></script>
+		<script type="text/javascript" src="../../js/jbb.js"></script>
 		<script>
-			Graphics(800, 600);
+			Graphics(800, 600, "App");
 			ClsColor(30, 60, 90);
 			
+			//AutoMidHandle(true);
 			var ship = LoadImage("../media/ship.png");
-			console.log(ship);
-			function main(){
+			HandleImage(ship, 100, 100);
+			var fnt = LoadFont("", "Arial");
+			SetFont(fnt, 48, true);
+			function App(){
 				Cls();
 				
+				var mx = MouseX();
+				var my = MouseY();
+
+				DrawText("Holla, die Waldfee", 200, 40);
+
 				Color(255, 255, 255);
 				Rect(20, 20, 100, 100, 0);
-
+				
 				Color(255, 200, 0);
 				Line(0, 0, GraphicsWidth(), GraphicsHeight());
+
+				DrawImage(ship, mx, my);
 			}
 		</script>
 	</body>

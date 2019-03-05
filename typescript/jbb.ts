@@ -4,10 +4,12 @@
 namespace jBB{
 	export class Core{
 		public data = {
+			ready : false,
 			lastID : 0,
 			canvas : {
 				element : null,
 				ctx : null,
+				bbf : null,
 				id : "",
 				x : 0,
 				y : 0,
@@ -25,10 +27,19 @@ namespace jBB{
 			global : {
 				autoMidHandle : false,
 				globalAlpha : 1.0
-			}
+			},
+
+			mouse : null,
+			keyboard : null,
+			time : new jTime(),
+			font : { current : null, default : null }
 		};
 
-		constructor(arg01:any, arg02:any, arg03:any){
+		constructor(canvasID:string)
+		constructor(canvasID:string, mainLoop:string)
+		constructor(width:number, height:number)
+		constructor(width:number, height:number, mainLoop:string)
+		constructor(arg01?:any, arg02?:any, arg03?:any){
 			if(typeof(arg01) == "number"){
 
 				// (width, height, [mainloop])
@@ -49,8 +60,33 @@ namespace jBB{
 
 			this.data.canvas.ctx = this.data.canvas.element.getContext('2d');
 			this.data.canvas.ctx.lineWidth = 1;
+			this.data.mouse = new jMouse(this);
+			this.data.keyboard = new jKeyboard(this);
+			this.data.font.default = new jFont("", "Arial", this);
+
+			window.onload = () => { this.data.ready = true; }
+
+			this.createBackbuffer();
 
 			window.requestAnimationFrame(this.render);
+		}
+
+		private createBackbuffer = () => {
+			var bbuf:HTMLCanvasElement = document.createElement("canvas");
+			var text:Text = document.createTextNode("backbuffer");
+			bbuf.appendChild(text);
+			bbuf.id = this.data.canvas.id + "-bbuf";
+			bbuf.width = this.data.canvas.width;
+			bbuf.height = this.data.canvas.height;
+			bbuf.style.display = "none";
+			this.data.canvas.bbf = bbuf.getContext('2d');
+			document.body.appendChild(bbuf);
+		}
+
+		public clearBackbuffer = () => {
+			this.data.canvas.ctx.fillStyle = "rgba(0, 0, 0, 0)";
+			this.data.canvas.ctx.setTransform(1, 0, 0, 1, 0, 0);
+			this.data.canvas.ctx.fillRect(0, 0, this.data.canvas.width, this.data.canvas.height);
 		}
 
 		private getCanvasElement = () => {
@@ -80,6 +116,31 @@ namespace jBB{
 			window[this.data.mainLoop]();
 			this.postRender();
 		}
+
+		// ==== input ====
+		// ---- mouse ----
+		public mouseX = ():number => { return this.data.mouse.x; }
+		public mouseY = ():number => { return this.data.mouse.y; }
+		public mouseDown = (key:number):boolean => { return this.data.mouse.down(key); }
+		public mouseHit = (key:number):boolean => { return this.data.mouse.hit(key); }
+		public flushMouse = () => { this.data.mouse.flush(); }
+		public getMouse = ():number[] => { return this.data.mouse.get(); }
+
+		// ---- keyboard ----
+		public keyDown = (key:number):boolean => { return this.data.keyboard.down(key); }
+		public keyHit = (key:number):boolean => { return this.data.keyboard.hit(key); }
+		public flushKeys = () => { this.data.keyboard.flush(); }
+
+		// ==== time & random ====
+		public milliSecs = ():number => {
+			return this.data.time.milliSecs();
+		}
+
+		public rand = (min:number, max:number):number => {
+			return this.data.time.rand(min, max);
+		}
+
+		// ==== graphics ====
 		/**
 		 * Löscht das Canvas in der eingestellten Farbe
 		 */
@@ -111,6 +172,7 @@ namespace jBB{
 			return this.data.canvas.height;
 		}
 
+		// === drawing ====
 		public rect = (x:number, y:number, width:number, height:number, filled:boolean = true) => {
 			if(filled){
 				this.data.canvas.ctx.fillStyle = this.data.color.draw.rgba();
@@ -129,8 +191,36 @@ namespace jBB{
 			this.data.canvas.ctx.stroke();
 		}
 
-		public loadImage = (path:string) => {
-			var img:jImage = new jImage(path, this);
+		// ==== fonts ====
+		public loadFont = (path:string, name:string):jFont => {
+			this.data.font.current = new jFont(path, name, this);
+			return this.data.font.current;
+		}
+		public setFont = (font:jFont, size:number = 16, bold:boolean = false, italic:boolean = false, weight:number = 0) => {
+			this.data.font.current = font;
+			this.data.font.current.set(size, bold, italic, weight);
+		}
+		public drawText = (txt:string, x:number = 0, y:number = 0) => {
+			if(this.data.font.current instanceof jFont){
+				this.data.font.current.draw(txt, x, y);
+			}else{
+				this.data.font.default.draw(txt, x, y);
+			}
+			
+		}
+
+		// ==== images ====
+
+		public autoMidHandle = (value:boolean) => {
+			this.data.global.autoMidHandle = value;
+		}
+
+		public loadImage = (path:string, cellWidth:number, cellHeight:number, startCell:number = 1, cellCount:number = 1) => {
+			return new jImage(path, cellWidth, cellHeight, startCell, cellCount, this);
+		}
+
+		public drawImage = (img:jImage, x:number, y:number) => {
+			img.draw(x, y);
 		}
 	}
 }
