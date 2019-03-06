@@ -9,18 +9,22 @@
 			Graphics(800, 600, "App");
 			ClsColor(30, 60, 90);
 			
-			//AutoMidHandle(true);
 			var ship = LoadImage("../media/ship.png");
-			HandleImage(ship, 100, 100);
-			var fnt = LoadFont("", "Arial");
+			var fnt = LoadFont("../media/Play-Bold.ttf", "Play");
 			SetFont(fnt, 48, true);
+			
+			MidHandle(ship, true);
+
+			var time = MilliSecs();
+			var fps = 0;
+			var tmpFps = 0;
 			function App(){
 				Cls();
 				
 				var mx = MouseX();
 				var my = MouseY();
 
-				DrawText("Holla, die Waldfee", 200, 40);
+				DrawText(fps, 200, 40);
 
 				Color(255, 255, 255);
 				Rect(20, 20, 100, 100, 0);
@@ -29,6 +33,14 @@
 				Line(0, 0, GraphicsWidth(), GraphicsHeight());
 
 				DrawImage(ship, mx, my);
+
+				tmpFps++;
+				var tmpTime = MilliSecs()
+				if(tmpTime - time > 1000){
+					fps = tmpFps;
+					tmpFps = 0;
+					time = tmpTime;
+				}
 			}
 		</script>
 	</body>

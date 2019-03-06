@@ -26,7 +26,8 @@ namespace jBB{
 
 			global : {
 				autoMidHandle : false,
-				globalAlpha : 1.0
+				alpha : 1.0,
+				scale : 1.0
 			},
 
 			mouse : null,
@@ -210,17 +211,9 @@ namespace jBB{
 		}
 
 		// ==== images ====
-
-		public autoMidHandle = (value:boolean) => {
-			this.data.global.autoMidHandle = value;
-		}
-
-		public loadImage = (path:string, cellWidth:number, cellHeight:number, startCell:number = 1, cellCount:number = 1) => {
-			return new jImage(path, cellWidth, cellHeight, startCell, cellCount, this);
-		}
-
-		public drawImage = (img:jImage, x:number, y:number) => {
-			img.draw(x, y);
-		}
+		public autoMidHandle = (value:boolean) => { this.data.global.autoMidHandle = value; }
+		public midHandle = (img:jImage, value:boolean) => { img.midHandle(value); }
+		public loadImage = (path:string, cellWidth:number, cellHeight:number, startCell:number = 1, cellCount:number = 1) => { return new jImage(path, cellWidth, cellHeight, startCell, cellCount, this); }
+		public drawImage = (img:jImage, x:number, y:number) => { img.draw(x, y); }
 	}
 }

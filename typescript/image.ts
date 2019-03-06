@@ -8,6 +8,7 @@ namespace jBB{
 		private frame = { num : 1, width : 0, height: 0, start: 1, current: 1 };
 		private hndl = { x : 0, y : 0 };
 		private autoMidHandle:boolean = false;
+		private localMidHandle:boolean = false;
 
 		constructor(width:number, height:number, context:Core)
 		constructor(path:string, cellWidth:number, cellHeight:number, startCell:number, cellCount:number, context:Core)
@@ -20,43 +21,37 @@ namespace jBB{
 				// load image
 				this.img.src = arg01;
 
-				if(typeof(arg02) == "number") this.frame.width = arg02;
-				if(typeof(arg03) == "number") this.frame.height = arg03;
-				if(typeof(arg04) == "number") this.frame.start = arg04;
-				if(typeof(arg05) == "number") this.frame.num = arg05;
+				if(typeof(arg02) === "number") this.frame.width = arg02;
+				if(typeof(arg03) === "number") this.frame.height = arg03;
+				this.frame.start = arg04;
+				this.frame.num = arg05;
+				this.ctx = arg06;
 
 				this.img.onload = (data) => {
 					this.loaded = true;
-					if(!this.frame.width) this.frame.width = this.img.width;
-					if(!this.frame.height) this.frame.height = this.img.height;
+					
+					if(this.frame.num === 1){
+						this.frame.width = this.img.width;
+						this.frame.height = this.img.height;
+					} 
 				}
 
 			}else if(typeof(arg01) === "number"){
 				// create a new image
 				this.img.width = arg01;
-				this.img.height = arg01;
+				this.img.height = arg02;
+				this.ctx = arg03;
 			}
 		}
 
 		public draw = (x:number, y:number) => {
-			if(this.loaded){
-				var dx:number = x; var dy:number = y;
-				if(this.autoMidHandle){ dx -= this.frame.width / 2; dy -= this.frame.height / 2; }
-
-				dx -= this.hndl.x; dy -= this.hndl.y;
+			if(this.loaded == true){
 				var sx:number = 0; var sy:number = 0;
+				var dx = x - this.hndl.x; var dy = y - this.hndl.y;
 
-				this.ctx.data.canvas.ctx.drawImage(
-					this.img, 
-					sx, 
-					sy, 
-					this.frame.width, 
-					this.frame.height, 
-					dx, 
-					dy,
-					this.frame.width,
-					this.frame.height
-				);
+				if(this.autoMidHandle == true || this.localMidHandle){ dx -= this.frame.width / 2; dy -= this.frame.height / 2; }
+				
+				this.ctx.data.canvas.ctx.drawImage(this.img, sx, sy, this.frame.width, this.frame.height, dx, dy, this.frame.width, this.frame.height);
 			}
 		}
 
@@ -67,6 +62,8 @@ namespace jBB{
 				this.hndl = { x : x, y : y };
 			}
 		}
+
+		public midHandle = (value:boolean) => { this.localMidHandle = value; }
 
 		public imageDataObject = ():ImageData => {
 			// create image data

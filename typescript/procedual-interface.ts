@@ -26,6 +26,7 @@ function DrawText(txt:string, x:number = 0, y:number = 0){ jBBContext.context.dr
 
 // ==== images ====
 function AutoMidHandle(value:boolean){ jBBContext.context.autoMidHandle(value); }
+function MidHandle(img:jBB.jImage, value:boolean){ jBBContext.context.midHandle(img, value); }
 function LoadImage(path, cellWidth:number, cellHeight:number, startCell:number = 1, cellCount:number = 1):jBB.jImage{ return jBBContext.context.loadImage(path, cellWidth, cellHeight, startCell, cellCount); }
 function DrawImage(img:jBB.jImage, x:number, y:number){ jBBContext.context.drawImage(img, x, y); }
 function HandleImage(img:jBB.jImage, x:number, y:number){ img.handle(x, y); }
@@ -41,3 +42,6 @@ function GetMouse():number[]{ return jBBContext.context.getMouse(); }
 function KeyDown(key:number):boolean{ return jBBContext.context.keyDown(key); }
 function KeyHit(key:number):boolean{ return jBBContext.context.keyHit(key); }
 function FlushKeys(){ jBBContext.context.flushKeys(); }
+
+// ==== time ====
+function MilliSecs():number{ return jBBContext.context.milliSecs(); }

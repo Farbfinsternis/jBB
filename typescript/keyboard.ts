@@ -6,10 +6,8 @@ namespace jBB{
 		constructor(context:Core){
 			this.ctx = context;
 
-			window.onload = () => {
-				this.ctx.data.canvas.element.onkeydown = this.saveKeyDown;
-				this.ctx.data.canvas.element.onkeyup = this.saveKeyUp;
-			}
+			this.ctx.data.canvas.element.onkeydown = this.saveKeyDown;
+			this.ctx.data.canvas.element.onkeyup = this.saveKeyUp;
 		}
 
 		private saveKeyDown = (event) => { this.keys[event.keyCode] = true; }

@@ -83,18 +83,17 @@ var jBB;
             this.frame = { num: 1, width: 0, height: 0, start: 1, current: 1 };
             this.hndl = { x: 0, y: 0 };
             this.autoMidHandle = false;
+            this.localMidHandle = false;
             this.draw = function (x, y) {
-                if (_this.loaded) {
-                    var dx = x;
-                    var dy = y;
-                    if (_this.autoMidHandle) {
+                if (_this.loaded == true) {
+                    var sx = 0;
+                    var sy = 0;
+                    var dx = x - _this.hndl.x;
+                    var dy = y - _this.hndl.y;
+                    if (_this.autoMidHandle == true || _this.localMidHandle) {
                         dx -= _this.frame.width / 2;
                         dy -= _this.frame.height / 2;
                     }
-                    dx -= _this.hndl.x;
-                    dy -= _this.hndl.y;
-                    var sx = 0;
-                    var sy = 0;
                     _this.ctx.data.canvas.ctx.drawImage(_this.img, sx, sy, _this.frame.width, _this.frame.height, dx, dy, _this.frame.width, _this.frame.height);
                 }
             };
@@ -106,6 +105,7 @@ var jBB;
                     _this.hndl = { x: x, y: y };
                 }
             };
+            this.midHandle = function (value) { _this.localMidHandle = value; };
             this.imageDataObject = function () {
                 // create image data
                 _this.ctx.clearBackbuffer();
@@ -118,26 +118,26 @@ var jBB;
             if (typeof (arg01) === "string") {
                 // load image
                 this.img.src = arg01;
-                if (typeof (arg02) == "number")
+                if (typeof (arg02) === "number")
                     this.frame.width = arg02;
-                if (typeof (arg03) == "number")
+                if (typeof (arg03) === "number")
                     this.frame.height = arg03;
-                if (typeof (arg04) == "number")
-                    this.frame.start = arg04;
-                if (typeof (arg05) == "number")
-                    this.frame.num = arg05;
+                this.frame.start = arg04;
+                this.frame.num = arg05;
+                this.ctx = arg06;
                 this.img.onload = function (data) {
                     _this.loaded = true;
-                    if (!_this.frame.width)
+                    if (_this.frame.num === 1) {
                         _this.frame.width = _this.img.width;
-                    if (!_this.frame.height)
                         _this.frame.height = _this.img.height;
+                    }
                 };
             }
             else if (typeof (arg01) === "number") {
                 // create a new image
                 this.img.width = arg01;
-                this.img.height = arg01;
+                this.img.height = arg02;
+                this.ctx = arg03;
             }
         }
         return jImage;
@@ -172,7 +172,8 @@ var jBB;
                 },
                 global: {
                     autoMidHandle: false,
-                    globalAlpha: 1.0
+                    alpha: 1.0,
+                    scale: 1.0
                 },
                 mouse: null,
                 keyboard: null,
@@ -312,17 +313,14 @@ var jBB;
                 }
             };
             // ==== images ====
-            this.autoMidHandle = function (value) {
-                _this.data.global.autoMidHandle = value;
-            };
+            this.autoMidHandle = function (value) { _this.data.global.autoMidHandle = value; };
+            this.midHandle = function (img, value) { img.midHandle(value); };
             this.loadImage = function (path, cellWidth, cellHeight, startCell, cellCount) {
                 if (startCell === void 0) { startCell = 1; }
                 if (cellCount === void 0) { cellCount = 1; }
                 return new jBB.jImage(path, cellWidth, cellHeight, startCell, cellCount, _this);
             };
-            this.drawImage = function (img, x, y) {
-                img.draw(x, y);
-            };
+            this.drawImage = function (img, x, y) { img.draw(x, y); };
             if (typeof (arg01) == "number") {
                 // (width, height, [mainloop])
                 this.data.lastID++;
@@ -373,10 +371,8 @@ var jBB;
                 }
             };
             this.ctx = context;
-            window.onload = function () {
-                _this.ctx.data.canvas.element.onkeydown = _this.saveKeyDown;
-                _this.ctx.data.canvas.element.onkeyup = _this.saveKeyUp;
-            };
+            this.ctx.data.canvas.element.onkeydown = this.saveKeyDown;
+            this.ctx.data.canvas.element.onkeyup = this.saveKeyUp;
         }
         return jKeyboard;
     }());
@@ -414,11 +410,9 @@ var jBB;
                 return result;
             };
             this.ctx = context;
-            window.onload = function () {
-                _this.ctx.data.canvas.element.onmousemove = _this.saveMousePos;
-                _this.ctx.data.canvas.element.onmousedown = _this.saveMouseDown;
-                _this.ctx.data.canvas.element.onmouseup = _this.saveMouseUp;
-            };
+            this.ctx.data.canvas.element.onmousemove = this.saveMousePos;
+            this.ctx.data.canvas.element.onmousedown = this.saveMouseDown;
+            this.ctx.data.canvas.element.onmouseup = this.saveMouseUp;
         }
         return jMouse;
     }());
@@ -475,6 +469,7 @@ function DrawText(txt, x, y) {
 }
 // ==== images ====
 function AutoMidHandle(value) { jBBContext.context.autoMidHandle(value); }
+function MidHandle(img, value) { jBBContext.context.midHandle(img, value); }
 function LoadImage(path, cellWidth, cellHeight, startCell, cellCount) {
     if (startCell === void 0) { startCell = 1; }
     if (cellCount === void 0) { cellCount = 1; }
@@ -492,6 +487,8 @@ function GetMouse() { return jBBContext.context.getMouse(); }
 function KeyDown(key) { return jBBContext.context.keyDown(key); }
 function KeyHit(key) { return jBBContext.context.keyHit(key); }
 function FlushKeys() { jBBContext.context.flushKeys(); }
+// ==== time ====
+function MilliSecs() { return jBBContext.context.milliSecs(); }
 var jBB;
 (function (jBB) {
     var jTime = /** @class */ (function () {

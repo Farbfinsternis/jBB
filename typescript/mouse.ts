@@ -11,11 +11,9 @@ namespace jBB{
 		constructor(context:Core){
 			this.ctx = context;
 
-			window.onload = () => {
-				this.ctx.data.canvas.element.onmousemove = this.saveMousePos;
-				this.ctx.data.canvas.element.onmousedown = this.saveMouseDown;
-				this.ctx.data.canvas.element.onmouseup = this.saveMouseUp;
-			}
+			this.ctx.data.canvas.element.onmousemove = this.saveMousePos;
+			this.ctx.data.canvas.element.onmousedown = this.saveMouseDown;
+			this.ctx.data.canvas.element.onmouseup = this.saveMouseUp;
 		}
 
 		private saveMousePos = (event:any) => {
