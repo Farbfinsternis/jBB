@@ -28,8 +28,10 @@ function DrawText(txt:string, x:number = 0, y:number = 0){ jBBContext.context.dr
 function AutoMidHandle(value:boolean){ jBBContext.context.autoMidHandle(value); }
 function MidHandle(img:jBB.jImage, value:boolean){ jBBContext.context.midHandle(img, value); }
 function LoadImage(path, cellWidth:number, cellHeight:number, startCell:number = 1, cellCount:number = 1):jBB.jImage{ return jBBContext.context.loadImage(path, cellWidth, cellHeight, startCell, cellCount); }
-function DrawImage(img:jBB.jImage, x:number, y:number){ jBBContext.context.drawImage(img, x, y); }
+function DrawImage(img:jBB.jImage, x:number, y:number, frame:number = 1){ jBBContext.context.drawImage(img, x, y, frame); }
 function HandleImage(img:jBB.jImage, x:number, y:number){ img.handle(x, y); }
+function ImageWidth(img:jBB.jImage):number{ return jBBContext.context.imageWidth(img); }
+function ImageHeight(img:jBB.jImage):number{ return jBBContext.context.imageHeight(img); }
 
 // ==== input ====
 // ---- mouse ----

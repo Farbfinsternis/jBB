@@ -32,8 +32,9 @@
 				Color(255, 200, 0);
 				Line(0, 0, GraphicsWidth(), GraphicsHeight());
 
+				DrawText(mx + ", " + my, 20, 100);
 				DrawImage(ship, mx, my);
-
+				
 				tmpFps++;
 				var tmpTime = MilliSecs()
 				if(tmpTime - time > 1000){

@@ -10,7 +10,7 @@ namespace jBB{
 
 		constructor(context:Core){
 			this.ctx = context;
-
+			this.keys = [];
 			this.ctx.data.canvas.element.onmousemove = this.saveMousePos;
 			this.ctx.data.canvas.element.onmousedown = this.saveMouseDown;
 			this.ctx.data.canvas.element.onmouseup = this.saveMouseUp;

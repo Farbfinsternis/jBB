@@ -84,17 +84,25 @@ var jBB;
             this.hndl = { x: 0, y: 0 };
             this.autoMidHandle = false;
             this.localMidHandle = false;
-            this.draw = function (x, y) {
+            this.scale = { x: 1.0, y: 1.0 };
+            this.rotation = 45;
+            this.draw = function (x, y, frame) {
+                if (frame === void 0) { frame = 1; }
                 if (_this.loaded == true) {
-                    var sx = 0;
-                    var sy = 0;
+                    var tilePos = _this.getTilePos(frame - 1);
                     var dx = x - _this.hndl.x;
                     var dy = y - _this.hndl.y;
                     if (_this.autoMidHandle == true || _this.localMidHandle) {
                         dx -= _this.frame.width / 2;
                         dy -= _this.frame.height / 2;
                     }
-                    _this.ctx.data.canvas.ctx.drawImage(_this.img, sx, sy, _this.frame.width, _this.frame.height, dx, dy, _this.frame.width, _this.frame.height);
+                    _this.cnv.save();
+                    _this.cnv.translate(_this.ctx.data.canvas.element.width / 2, _this.ctx.data.canvas.element.height / 2);
+                    _this.cnv.rotate(_this.rotation * Math.PI / 180);
+                    _this.cnv.scale(_this.scale.x, _this.scale.y);
+                    _this.cnv.drawImage(_this.img, tilePos.x, tilePos.y, _this.frame.width, _this.frame.height, dx, dy, _this.frame.width, _this.frame.height);
+                    _this.cnv.scale(1.0, 1.0);
+                    _this.cnv.restore();
                 }
             };
             this.handle = function (x, y) {
@@ -113,7 +121,15 @@ var jBB;
                 _this.imgData = _this.ctx.data.canvas.bbf.getImageData(0, 0, _this.img.width, _this.img.height);
                 return _this.imgData;
             };
+            this.width = function () { return _this.img.width; };
+            this.height = function () { return _this.img.height; };
+            this.cellsPerRow = function () { return _this.img.width / _this.frame.width; };
+            this.getTilePos = function (index) {
+                return { x: (index % _this.cellsPerRow() * _this.frame.width), y: (Math.floor(index / _this.cellsPerRow())) * _this.frame.height };
+            };
+            this.getTileIndex = function (x, y) { return (x / _this.frame.width) + (y / _this.frame.height * _this.cellsPerRow()); };
             this.ctx = arg06;
+            this.cnv = this.ctx.data.canvas.ctx;
             this.autoMidHandle = this.ctx.data.global.autoMidHandle;
             if (typeof (arg01) === "string") {
                 // load image
@@ -320,7 +336,12 @@ var jBB;
                 if (cellCount === void 0) { cellCount = 1; }
                 return new jBB.jImage(path, cellWidth, cellHeight, startCell, cellCount, _this);
             };
-            this.drawImage = function (img, x, y) { img.draw(x, y); };
+            this.drawImage = function (img, x, y, frame) {
+                if (frame === void 0) { frame = 1.0; }
+                img.draw(x, y, frame);
+            };
+            this.imageWidth = function (img) { return img.width(); };
+            this.imageHeight = function (img) { return img.height(); };
             if (typeof (arg01) == "number") {
                 // (width, height, [mainloop])
                 this.data.lastID++;
@@ -410,6 +431,7 @@ var jBB;
                 return result;
             };
             this.ctx = context;
+            this.keys = [];
             this.ctx.data.canvas.element.onmousemove = this.saveMousePos;
             this.ctx.data.canvas.element.onmousedown = this.saveMouseDown;
             this.ctx.data.canvas.element.onmouseup = this.saveMouseUp;
@@ -475,8 +497,13 @@ function LoadImage(path, cellWidth, cellHeight, startCell, cellCount) {
     if (cellCount === void 0) { cellCount = 1; }
     return jBBContext.context.loadImage(path, cellWidth, cellHeight, startCell, cellCount);
 }
-function DrawImage(img, x, y) { jBBContext.context.drawImage(img, x, y); }
+function DrawImage(img, x, y, frame) {
+    if (frame === void 0) { frame = 1; }
+    jBBContext.context.drawImage(img, x, y, frame);
+}
 function HandleImage(img, x, y) { img.handle(x, y); }
+function ImageWidth(img) { return jBBContext.context.imageWidth(img); }
+function ImageHeight(img) { return jBBContext.context.imageHeight(img); }
 // ==== input ====
 // ---- mouse ----
 function MouseX() { return jBBContext.context.mouseX(); }

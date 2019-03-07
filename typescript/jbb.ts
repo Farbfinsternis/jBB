@@ -214,6 +214,8 @@ namespace jBB{
 		public autoMidHandle = (value:boolean) => { this.data.global.autoMidHandle = value; }
 		public midHandle = (img:jImage, value:boolean) => { img.midHandle(value); }
 		public loadImage = (path:string, cellWidth:number, cellHeight:number, startCell:number = 1, cellCount:number = 1) => { return new jImage(path, cellWidth, cellHeight, startCell, cellCount, this); }
-		public drawImage = (img:jImage, x:number, y:number) => { img.draw(x, y); }
+		public drawImage = (img:jImage, x:number, y:number, frame:number = 1.0) => { img.draw(x, y, frame); }
+		public imageWidth = (img:jImage):number => { return img.width(); }
+		public imageHeight = (img:jImage):number => { return img.height(); }
 	}
 }
