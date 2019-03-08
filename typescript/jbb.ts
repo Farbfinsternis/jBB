@@ -217,5 +217,7 @@ namespace jBB{
 		public drawImage = (img:jImage, x:number, y:number, frame:number = 1.0) => { img.draw(x, y, frame); }
 		public imageWidth = (img:jImage):number => { return img.width(); }
 		public imageHeight = (img:jImage):number => { return img.height(); }
+		public rotateImage = (img:jImage, value:number) => { img.rotate(value); }
+		public imageHandle = (img:jImage):any => { if(img.loaded == true){ return img.handle(); }else{ return 0; } }
 	}
 }

@@ -3,7 +3,7 @@ namespace jBB{
 		private path:string;
 		private img:HTMLImageElement = new Image();
 		private imgData;
-		private loaded:boolean = false;
+		public loaded:boolean = false;
 		private ctx:Core;
 		private cnv:any;
 		private frame = { num : 1, width : 0, height: 0, start: 1, current: 1 };
@@ -11,7 +11,7 @@ namespace jBB{
 		private autoMidHandle:boolean = false;
 		private localMidHandle:boolean = false;
 		private scale = { x : 1.0, y : 1.0 };
-		private rotation:number = 45;
+		private rotation:number = 0;
 
 		constructor(width:number, height:number, context:Core)
 		constructor(path:string, cellWidth:number, cellHeight:number, startCell:number, cellCount:number, context:Core)
@@ -51,12 +51,13 @@ namespace jBB{
 			if(this.loaded == true){
 				var tilePos = this.getTilePos(frame - 1);
 				var dx = x - this.hndl.x; var dy = y - this.hndl.y;
-
+				
 				if(this.autoMidHandle == true || this.localMidHandle){ dx -= this.frame.width / 2; dy -= this.frame.height / 2; }
 				
 				this.cnv.save();
-				this.cnv.translate(this.ctx.data.canvas.element.width / 2, this.ctx.data.canvas.element.height / 2);
+				this.cnv.translate(x, y);
 				this.cnv.rotate(this.rotation * Math.PI / 180);
+				this.cnv.translate(-x, -y);
 				this.cnv.scale(this.scale.x, this.scale.y);
 				this.cnv.drawImage(this.img, tilePos.x, tilePos.y, this.frame.width, this.frame.height, dx, dy, this.frame.width, this.frame.height);
 				this.cnv.scale(1.0, 1.0);
@@ -64,9 +65,13 @@ namespace jBB{
 			}
 		}
 
-		public handle = (x:number, y:number) => {
+		public handle = (x:number = undefined, y:number = undefined) => {
 			if(x === undefined){
-				return this.hndl;
+				if(this.autoMidHandle == true || this.localMidHandle){
+					return { x : this.hndl.x + this.img.width / 2, y : this.hndl.y + this.img.height / 2 };
+				}else{
+					return this.hndl;
+				}
 			}else{
 				this.hndl = { x : x, y : y };
 			}
@@ -85,6 +90,7 @@ namespace jBB{
 
 		public width = ():number => { return this.img.width; }
 		public height = ():number => { return this.img.height; }
+		public rotate = (value:number) => { this.rotation = value; }
 
 		private cellsPerRow = ():number => { return this.img.width / this.frame.width; }
 		private getTilePos = (index:number):any => {

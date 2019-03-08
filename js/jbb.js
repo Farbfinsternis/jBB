@@ -85,7 +85,7 @@ var jBB;
             this.autoMidHandle = false;
             this.localMidHandle = false;
             this.scale = { x: 1.0, y: 1.0 };
-            this.rotation = 45;
+            this.rotation = 0;
             this.draw = function (x, y, frame) {
                 if (frame === void 0) { frame = 1; }
                 if (_this.loaded == true) {
@@ -97,8 +97,9 @@ var jBB;
                         dy -= _this.frame.height / 2;
                     }
                     _this.cnv.save();
-                    _this.cnv.translate(_this.ctx.data.canvas.element.width / 2, _this.ctx.data.canvas.element.height / 2);
+                    _this.cnv.translate(x, y);
                     _this.cnv.rotate(_this.rotation * Math.PI / 180);
+                    _this.cnv.translate(-x, -y);
                     _this.cnv.scale(_this.scale.x, _this.scale.y);
                     _this.cnv.drawImage(_this.img, tilePos.x, tilePos.y, _this.frame.width, _this.frame.height, dx, dy, _this.frame.width, _this.frame.height);
                     _this.cnv.scale(1.0, 1.0);
@@ -106,8 +107,15 @@ var jBB;
                 }
             };
             this.handle = function (x, y) {
+                if (x === void 0) { x = undefined; }
+                if (y === void 0) { y = undefined; }
                 if (x === undefined) {
-                    return _this.hndl;
+                    if (_this.autoMidHandle == true || _this.localMidHandle) {
+                        return { x: _this.hndl.x + _this.img.width / 2, y: _this.hndl.y + _this.img.height / 2 };
+                    }
+                    else {
+                        return _this.hndl;
+                    }
                 }
                 else {
                     _this.hndl = { x: x, y: y };
@@ -123,6 +131,7 @@ var jBB;
             };
             this.width = function () { return _this.img.width; };
             this.height = function () { return _this.img.height; };
+            this.rotate = function (value) { _this.rotation = value; };
             this.cellsPerRow = function () { return _this.img.width / _this.frame.width; };
             this.getTilePos = function (index) {
                 return { x: (index % _this.cellsPerRow() * _this.frame.width), y: (Math.floor(index / _this.cellsPerRow())) * _this.frame.height };
@@ -342,6 +351,13 @@ var jBB;
             };
             this.imageWidth = function (img) { return img.width(); };
             this.imageHeight = function (img) { return img.height(); };
+            this.rotateImage = function (img, value) { img.rotate(value); };
+            this.imageHandle = function (img) { if (img.loaded == true) {
+                return img.handle();
+            }
+            else {
+                return 0;
+            } };
             if (typeof (arg01) == "number") {
                 // (width, height, [mainloop])
                 this.data.lastID++;
@@ -504,6 +520,9 @@ function DrawImage(img, x, y, frame) {
 function HandleImage(img, x, y) { img.handle(x, y); }
 function ImageWidth(img) { return jBBContext.context.imageWidth(img); }
 function ImageHeight(img) { return jBBContext.context.imageHeight(img); }
+function RotateImage(img, value) { jBBContext.context.rotateImage(img, value); }
+function ImageXHandle(img) { return jBBContext.context.imageHandle(img).x; }
+function ImageYHandle(img) { return jBBContext.context.imageHandle(img).y; }
 // ==== input ====
 // ---- mouse ----
 function MouseX() { return jBBContext.context.mouseX(); }

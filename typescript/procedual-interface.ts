@@ -32,6 +32,9 @@ function DrawImage(img:jBB.jImage, x:number, y:number, frame:number = 1){ jBBCon
 function HandleImage(img:jBB.jImage, x:number, y:number){ img.handle(x, y); }
 function ImageWidth(img:jBB.jImage):number{ return jBBContext.context.imageWidth(img); }
 function ImageHeight(img:jBB.jImage):number{ return jBBContext.context.imageHeight(img); }
+function RotateImage(img:jBB.jImage, value:number){ jBBContext.context.rotateImage(img, value); }
+function ImageXHandle(img:jBB.jImage):number{ return jBBContext.context.imageHandle(img).x; }
+function ImageYHandle(img:jBB.jImage):number{ return jBBContext.context.imageHandle(img).y; }
 
 // ==== input ====
 // ---- mouse ----

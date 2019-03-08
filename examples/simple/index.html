@@ -11,10 +11,11 @@
 			
 			var ship = LoadImage("../media/ship.png");
 			var fnt = LoadFont("../media/Play-Bold.ttf", "Play");
-			SetFont(fnt, 48, true);
+			SetFont(fnt, 36, true);
 			
 			MidHandle(ship, true);
-
+			
+			var rot = 0;
 			var time = MilliSecs();
 			var fps = 0;
 			var tmpFps = 0;
@@ -23,18 +24,20 @@
 				
 				var mx = MouseX();
 				var my = MouseY();
-
-				DrawText(fps, 200, 40);
+				
+				DrawText(fps + " FPS", 200, 40);
 
 				Color(255, 255, 255);
 				Rect(20, 20, 100, 100, 0);
 				
 				Color(255, 200, 0);
 				Line(0, 0, GraphicsWidth(), GraphicsHeight());
-
-				DrawText(mx + ", " + my, 20, 100);
+				
+				rot++;
+				RotateImage(ship, rot);
 				DrawImage(ship, mx, my);
 				
+				DrawText("Handle: " + ImageXHandle(ship) + ", " + ImageYHandle(ship), 20, 200);
 				tmpFps++;
 				var tmpTime = MilliSecs()
 				if(tmpTime - time > 1000){
