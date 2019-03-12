@@ -173,7 +173,9 @@ var jBB;
                 // create a new image
                 this.img.width = arg01;
                 this.img.height = arg02;
-                this.ctx = arg03;
+                this.frame.num = arg03;
+                this.ctx = arg04;
+                this.img = new Image(arg01, arg02);
             }
         }
         return jImage;
@@ -402,6 +404,7 @@ var jBB;
                 if (y === void 0) { y = 1.0; }
                 img.scale(x, y);
             };
+            this.createImage = function (width, height, frames) { return new jBB.jImage(width, height, frames, _this); };
             if (typeof (arg01) == "number") {
                 // (width, height, [mainloop])
                 this.data.lastID++;
@@ -572,6 +575,10 @@ function ScaleImage(img, x, y) {
     if (x === void 0) { x = 1.0; }
     if (y === void 0) { y = 1.0; }
     jBBContext.context.scaleImage(img, x, y);
+}
+function CreateImage(width, height, frames) {
+    if (frames === void 0) { frames = 1; }
+    return new jBB.jImage(width, height, frames, jBBContext.context);
 }
 // ==== input ====
 // ---- mouse ----
