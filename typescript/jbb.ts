@@ -120,11 +120,37 @@ namespace jBB{
 
 		// ==== input ====
 		// ---- mouse ----
+		/**
+		 * Gibt die aktuelle X Koordinate des Mauszeigers im Canvas zurück
+		 */
 		public mouseX = ():number => { return this.data.mouse.x; }
+		/**
+		 * Gibt die aktuelle Y Koordinate des Mauszeigers im Canvas zurück
+		 */
 		public mouseY = ():number => { return this.data.mouse.y; }
+		/**
+		 * Gibt __true__ zurück wenn die angefragte Taste gedrückt wird, ansonsten __false__
+		 * 
+		 * @param - Nummer der Maustaste, beginnend bei 0
+		 * @returns __true__ wenn die Taste gedrückt ist, ansonsten __false__
+		 */
 		public mouseDown = (key:number):boolean => { return this.data.mouse.down(key); }
+		/**
+		 * Gibt __true__ zurück wenn die angefragte Taste einmal gedrückt wurde, ansonsten __false__
+		 * 
+		 * @param - Nummer der Maustaste, beginnend bei 0
+		 * @returns __true__ wenn die Taste gedrückt worden ist, ansonsten __false__
+		 */
 		public mouseHit = (key:number):boolean => { return this.data.mouse.hit(key); }
+		/**
+		 * Löscht alle evtl. noch vorhandenen Maus-Events
+		 */
 		public flushMouse = () => { this.data.mouse.flush(); }
+		/**
+		 * Gibt ein Array mit den Nummern der aktuell gedrückten Maustasten zurück
+		 * 
+		 * @returns Ein Array mit den Nummern aktuell gedrückter Maustasten
+		 */
 		public getMouse = ():number[] => { return this.data.mouse.get(); }
 
 		// ---- keyboard ----
@@ -133,13 +159,20 @@ namespace jBB{
 		public flushKeys = () => { this.data.keyboard.flush(); }
 
 		// ==== time & random ====
-		public milliSecs = ():number => {
-			return this.data.time.milliSecs();
-		}
+		/**
+		 * Gibt die Millisekunden zurück die seit dem Start des Rechners vergangen sind
+		 */
+		public milliSecs = ():number => { return this.data.time.milliSecs(); }
 
-		public rand = (min:number, max:number):number => {
-			return this.data.time.rand(min, max);
-		}
+		/**
+		 * Gibt eine zufällig Zahl aus dem angegebenen Bereich zurück
+		 * 
+		 * @param min - kleinste Zahl im Bereich
+		 * @param max - größte Zahl im Bereich
+		 * 
+		 * @returns Eine Zahl zwischen __min__ und __max__
+		 */
+		public rand = (min:number, max:number):number => { return this.data.time.rand(min, max); }
 
 		// ==== graphics ====
 		/**
@@ -157,21 +190,11 @@ namespace jBB{
 		 * @param g - die Grünkomponente der Farbe
 		 * @param b - die Blaukomponente der Farbe
 		 */
-		public clsColor = (r:number, g:number, b:number) => {
-			this.data.color.cls.set(r, g, b);
-		}
-
-		public color = (r:number = 255, g:number = 255, b:number = 255, a:number = 1.0) => {
-			this.data.color.draw.set(r, g, b, a);
-		}
-
-		public graphicsWidth = () => {
-			return this.data.canvas.width;
-		}
-
-		public graphicsHeight = () => {
-			return this.data.canvas.height;
-		}
+		public clsColor = (r:number, g:number, b:number) => { this.data.color.cls.set(r, g, b); }
+		public color = (r:number = 255, g:number = 255, b:number = 255, a:number = 1.0) => { this.data.color.draw.set(r, g, b, a); }
+		public graphicsWidth = () => { return this.data.canvas.width; }
+		public graphicsHeight = () => { return this.data.canvas.height; }
+		public tFormFilter = (value:boolean) => { this.data.canvas.ctx.imageSmoothingEnabled = value; }
 
 		// === drawing ====
 		public rect = (x:number, y:number, width:number, height:number, filled:boolean = true) => {
@@ -219,5 +242,7 @@ namespace jBB{
 		public imageHeight = (img:jImage):number => { return img.height(); }
 		public rotateImage = (img:jImage, value:number) => { img.rotate(value); }
 		public imageHandle = (img:jImage):any => { if(img.loaded == true){ return img.handle(); }else{ return 0; } }
+		public scaleImage = (img:jImage, x:number = 1.0, y:number = 1.0) => { img.scale(x, y); }
+		public createImage = (width:number, height:number, frames:number):jImage => { return new jImage(width, height, frames, this); }
 	}
 }

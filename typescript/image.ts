@@ -10,10 +10,10 @@ namespace jBB{
 		private hndl = { x : 0, y : 0 };
 		private autoMidHandle:boolean = false;
 		private localMidHandle:boolean = false;
-		private scale = { x : 1.0, y : 1.0 };
+		private scaleFac = { x : 1.0, y : 1.0 };
 		private rotation:number = 0;
 
-		constructor(width:number, height:number, context:Core)
+		constructor(width:number, height:number, frames:number, context:Core)
 		constructor(path:string, cellWidth:number, cellHeight:number, startCell:number, cellCount:number, context:Core)
 		constructor(arg01?:any, arg02?:any, arg03?:any, arg04?:any, arg05?:any, arg06?:any){
 			this.ctx = arg06;
@@ -43,22 +43,32 @@ namespace jBB{
 				// create a new image
 				this.img.width = arg01;
 				this.img.height = arg02;
-				this.ctx = arg03;
+				this.frame.num = arg03;
+				this.ctx = arg04;
+				this.img = new Image(arg01, arg02);
 			}
 		}
 
 		public draw = (x:number, y:number, frame:number = 1) => {
+			var origX = x; 
+			var origY = y;
+			x /= this.scaleFac.x;
+			y /= this.scaleFac.y;
+
 			if(this.loaded == true){
 				var tilePos = this.getTilePos(frame - 1);
 				var dx = x - this.hndl.x; var dy = y - this.hndl.y;
 				
-				if(this.autoMidHandle == true || this.localMidHandle){ dx -= this.frame.width / 2; dy -= this.frame.height / 2; }
+				if(this.autoMidHandle == true || this.localMidHandle){
+					dx -= (this.frame.width / 2);
+					dy -= (this.frame.height / 2);
+				}
 				
 				this.cnv.save();
-				this.cnv.translate(x, y);
+				this.cnv.translate(origX, origY);
 				this.cnv.rotate(this.rotation * Math.PI / 180);
-				this.cnv.translate(-x, -y);
-				this.cnv.scale(this.scale.x, this.scale.y);
+				this.cnv.translate(-origX, -origY);
+				this.cnv.scale(this.scaleFac.x, this.scaleFac.y);
 				this.cnv.drawImage(this.img, tilePos.x, tilePos.y, this.frame.width, this.frame.height, dx, dy, this.frame.width, this.frame.height);
 				this.cnv.scale(1.0, 1.0);
 				this.cnv.restore();
@@ -73,6 +83,8 @@ namespace jBB{
 					return this.hndl;
 				}
 			}else{
+				x /= this.scaleFac.x;
+				y /= this.scaleFac.y;
 				this.hndl = { x : x, y : y };
 			}
 		}
@@ -91,6 +103,7 @@ namespace jBB{
 		public width = ():number => { return this.img.width; }
 		public height = ():number => { return this.img.height; }
 		public rotate = (value:number) => { this.rotation = value; }
+		public scale = (x:number = 1.0, y:number = 1.0) => { this.scaleFac = { x : x, y : y }; }
 
 		private cellsPerRow = ():number => { return this.img.width / this.frame.width; }
 		private getTilePos = (index:number):any => {

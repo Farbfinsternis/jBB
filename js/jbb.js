@@ -84,23 +84,27 @@ var jBB;
             this.hndl = { x: 0, y: 0 };
             this.autoMidHandle = false;
             this.localMidHandle = false;
-            this.scale = { x: 1.0, y: 1.0 };
+            this.scaleFac = { x: 1.0, y: 1.0 };
             this.rotation = 0;
             this.draw = function (x, y, frame) {
                 if (frame === void 0) { frame = 1; }
+                var origX = x;
+                var origY = y;
+                x /= _this.scaleFac.x;
+                y /= _this.scaleFac.y;
                 if (_this.loaded == true) {
                     var tilePos = _this.getTilePos(frame - 1);
                     var dx = x - _this.hndl.x;
                     var dy = y - _this.hndl.y;
                     if (_this.autoMidHandle == true || _this.localMidHandle) {
-                        dx -= _this.frame.width / 2;
-                        dy -= _this.frame.height / 2;
+                        dx -= (_this.frame.width / 2);
+                        dy -= (_this.frame.height / 2);
                     }
                     _this.cnv.save();
-                    _this.cnv.translate(x, y);
+                    _this.cnv.translate(origX, origY);
                     _this.cnv.rotate(_this.rotation * Math.PI / 180);
-                    _this.cnv.translate(-x, -y);
-                    _this.cnv.scale(_this.scale.x, _this.scale.y);
+                    _this.cnv.translate(-origX, -origY);
+                    _this.cnv.scale(_this.scaleFac.x, _this.scaleFac.y);
                     _this.cnv.drawImage(_this.img, tilePos.x, tilePos.y, _this.frame.width, _this.frame.height, dx, dy, _this.frame.width, _this.frame.height);
                     _this.cnv.scale(1.0, 1.0);
                     _this.cnv.restore();
@@ -118,6 +122,8 @@ var jBB;
                     }
                 }
                 else {
+                    x /= _this.scaleFac.x;
+                    y /= _this.scaleFac.y;
                     _this.hndl = { x: x, y: y };
                 }
             };
@@ -132,6 +138,11 @@ var jBB;
             this.width = function () { return _this.img.width; };
             this.height = function () { return _this.img.height; };
             this.rotate = function (value) { _this.rotation = value; };
+            this.scale = function (x, y) {
+                if (x === void 0) { x = 1.0; }
+                if (y === void 0) { y = 1.0; }
+                _this.scaleFac = { x: x, y: y };
+            };
             this.cellsPerRow = function () { return _this.img.width / _this.frame.width; };
             this.getTilePos = function (index) {
                 return { x: (index % _this.cellsPerRow() * _this.frame.width), y: (Math.floor(index / _this.cellsPerRow())) * _this.frame.height };
@@ -246,23 +257,56 @@ var jBB;
             };
             // ==== input ====
             // ---- mouse ----
+            /**
+             * Gibt die aktuelle X Koordinate des Mauszeigers im Canvas zurück
+             */
             this.mouseX = function () { return _this.data.mouse.x; };
+            /**
+             * Gibt die aktuelle Y Koordinate des Mauszeigers im Canvas zurück
+             */
             this.mouseY = function () { return _this.data.mouse.y; };
+            /**
+             * Gibt __true__ zurück wenn die angefragte Taste gedrückt wird, ansonsten __false__
+             *
+             * @param - Nummer der Maustaste, beginnend bei 0
+             * @returns __true__ wenn die Taste gedrückt ist, ansonsten __false__
+             */
             this.mouseDown = function (key) { return _this.data.mouse.down(key); };
+            /**
+             * Gibt __true__ zurück wenn die angefragte Taste einmal gedrückt wurde, ansonsten __false__
+             *
+             * @param - Nummer der Maustaste, beginnend bei 0
+             * @returns __true__ wenn die Taste gedrückt worden ist, ansonsten __false__
+             */
             this.mouseHit = function (key) { return _this.data.mouse.hit(key); };
+            /**
+             * Löscht alle evtl. noch vorhandenen Maus-Events
+             */
             this.flushMouse = function () { _this.data.mouse.flush(); };
+            /**
+             * Gibt ein Array mit den Nummern der aktuell gedrückten Maustasten zurück
+             *
+             * @returns Ein Array mit den Nummern aktuell gedrückter Maustasten
+             */
             this.getMouse = function () { return _this.data.mouse.get(); };
             // ---- keyboard ----
             this.keyDown = function (key) { return _this.data.keyboard.down(key); };
             this.keyHit = function (key) { return _this.data.keyboard.hit(key); };
             this.flushKeys = function () { _this.data.keyboard.flush(); };
             // ==== time & random ====
-            this.milliSecs = function () {
-                return _this.data.time.milliSecs();
-            };
-            this.rand = function (min, max) {
-                return _this.data.time.rand(min, max);
-            };
+            /**
+             * Gibt die Millisekunden zurück die seit dem Start des Rechners vergangen sind
+             */
+            this.milliSecs = function () { return _this.data.time.milliSecs(); };
+            /**
+             * Gibt eine zufällig Zahl aus dem angegebenen Bereich zurück
+             *
+             * @param min - kleinste Zahl im Bereich
+             * @param max - größte Zahl im Bereich
+             *
+             * @returns Eine Zahl zwischen __min__ und __max__
+             */
+            this.rand = function (min, max) { return _this.data.time.rand(min, max); };
             // ==== graphics ====
             /**
              * Löscht das Canvas in der eingestellten Farbe
@@ -279,9 +323,7 @@ var jBB;
              * @param g - die Grünkomponente der Farbe
              * @param b - die Blaukomponente der Farbe
              */
-            this.clsColor = function (r, g, b) {
-                _this.data.color.cls.set(r, g, b);
-            };
+            this.clsColor = function (r, g, b) { _this.data.color.cls.set(r, g, b); };
             this.color = function (r, g, b, a) {
                 if (r === void 0) { r = 255; }
                 if (g === void 0) { g = 255; }
@@ -289,12 +331,9 @@ var jBB;
                 if (a === void 0) { a = 1.0; }
                 _this.data.color.draw.set(r, g, b, a);
             };
-            this.graphicsWidth = function () {
-                return _this.data.canvas.width;
-            };
-            this.graphicsHeight = function () {
-                return _this.data.canvas.height;
-            };
+            this.graphicsWidth = function () { return _this.data.canvas.width; };
+            this.graphicsHeight = function () { return _this.data.canvas.height; };
+            this.tFormFilter = function (value) { _this.data.canvas.ctx.imageSmoothingEnabled = value; };
             // === drawing ====
             this.rect = function (x, y, width, height, filled) {
                 if (filled === void 0) { filled = true; }
@@ -358,6 +397,11 @@ var jBB;
             else {
                 return 0;
             } };
+            this.scaleImage = function (img, x, y) {
+                if (x === void 0) { x = 1.0; }
+                if (y === void 0) { y = 1.0; }
+                img.scale(x, y);
+            };
             if (typeof (arg01) == "number") {
                 // (width, height, [mainloop])
                 this.data.lastID++;
@@ -482,6 +526,7 @@ function Color(red, green, blue, alpha) {
 }
 function GraphicsWidth() { return jBBContext.context.graphicsWidth(); }
 function GraphicsHeight() { return jBBContext.context.graphicsHeight(); }
+function TFormFilter(value) { jBBContext.context.tFormFilter(value); }
 // ==== drawing ====
 function Rect(x, y, width, height, filled) {
     if (filled === void 0) { filled = 1; }
@@ -523,6 +568,11 @@ function ImageHeight(img) { return jBBContext.context.imageHeight(img); }
 function RotateImage(img, value) { jBBContext.context.rotateImage(img, value); }
 function ImageXHandle(img) { return jBBContext.context.imageHandle(img).x; }
 function ImageYHandle(img) { return jBBContext.context.imageHandle(img).y; }
+function ScaleImage(img, x, y) {
+    if (x === void 0) { x = 1.0; }
+    if (y === void 0) { y = 1.0; }
+    jBBContext.context.scaleImage(img, x, y);
+}
 // ==== input ====
 // ---- mouse ----
 function MouseX() { return jBBContext.context.mouseX(); }

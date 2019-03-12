@@ -8,6 +8,7 @@ function ClsColor(red:number = 0, green:number = 0, blue:number = 0){ jBBContext
 function Color(red:number = 255, green:number = 255, blue:number = 255, alpha:number = 1.0){ jBBContext.context.color(red, green, blue, alpha); }
 function GraphicsWidth(){ return jBBContext.context.graphicsWidth(); }
 function GraphicsHeight(){ return jBBContext.context.graphicsHeight(); }
+function TFormFilter(value:boolean){ jBBContext.context.tFormFilter(value); }
 
 // ==== drawing ====
 function Rect(x:number, y:number, width:number, height:number, filled:number = 1){
@@ -35,6 +36,8 @@ function ImageHeight(img:jBB.jImage):number{ return jBBContext.context.imageHeig
 function RotateImage(img:jBB.jImage, value:number){ jBBContext.context.rotateImage(img, value); }
 function ImageXHandle(img:jBB.jImage):number{ return jBBContext.context.imageHandle(img).x; }
 function ImageYHandle(img:jBB.jImage):number{ return jBBContext.context.imageHandle(img).y; }
+function ScaleImage(img:jBB.jImage, x:number = 1.0, y:number = 1.0){ jBBContext.context.scaleImage(img, x, y); }
+function CreateImage(width:number, height:number, frames:number = 1):jBB.jImage{ return new jBB.jImage(width, height, frames, jBBContext.context); }
 
 // ==== input ====
 // ---- mouse ----
