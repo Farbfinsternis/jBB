@@ -38,6 +38,7 @@ function ImageXHandle(img:jBB.jImage):number{ return jBBContext.context.imageHan
 function ImageYHandle(img:jBB.jImage):number{ return jBBContext.context.imageHandle(img).y; }
 function ScaleImage(img:jBB.jImage, x:number = 1.0, y:number = 1.0){ jBBContext.context.scaleImage(img, x, y); }
 function CreateImage(width:number, height:number, frames:number = 1):jBB.jImage{ return new jBB.jImage(width, height, frames, jBBContext.context); }
+function ImageRectOverlap(img:jBB.jImage, x:number, y:number, startX:number, startY:number, width:number, height:number){ return jBBContext.context.imageRectOverlap(img, x, y, startX, startY, width, height); }
 
 // ==== input ====
 // ---- mouse ----

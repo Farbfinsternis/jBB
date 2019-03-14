@@ -104,6 +104,12 @@ namespace jBB{
 		public height = ():number => { return this.img.height; }
 		public rotate = (value:number) => { this.rotation = value; }
 		public scale = (x:number = 1.0, y:number = 1.0) => { this.scaleFac = { x : x, y : y }; }
+		public rectOverlap = (x:number, y:number, startX:number, startY:number, width:number, height:number):boolean => {
+			var r1 = { left : x, top : y, right : x + this.img.width, bottom : y + this.img.height };
+			var r2 = { left : startX, top : startY, right : startX + width, bottom : startY + height };
+			
+			return !(r2.left > r1.right || r2.right < r1.left || r2.top > r1.bottom || r2.bottom < r1.top);
+		}
 
 		private cellsPerRow = ():number => { return this.img.width / this.frame.width; }
 		private getTilePos = (index:number):any => {

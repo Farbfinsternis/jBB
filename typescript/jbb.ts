@@ -244,5 +244,6 @@ namespace jBB{
 		public imageHandle = (img:jImage):any => { if(img.loaded == true){ return img.handle(); }else{ return 0; } }
 		public scaleImage = (img:jImage, x:number = 1.0, y:number = 1.0) => { img.scale(x, y); }
 		public createImage = (width:number, height:number, frames:number):jImage => { return new jImage(width, height, frames, this); }
+		public imageRectOverlap = (img:jImage, x:number, y:number, startX:number, startY:number, width:number, height:number):boolean => { return img.rectOverlap(x, y, startX, startY, width, height); }
 	}
 }

@@ -143,6 +143,11 @@ var jBB;
                 if (y === void 0) { y = 1.0; }
                 _this.scaleFac = { x: x, y: y };
             };
+            this.rectOverlap = function (x, y, startX, startY, width, height) {
+                var r1 = { left: x, top: y, right: x + _this.img.width, bottom: y + _this.img.height };
+                var r2 = { left: startX, top: startY, right: startX + width, bottom: startY + height };
+                return !(r2.left > r1.right || r2.right < r1.left || r2.top > r1.bottom || r2.bottom < r1.top);
+            };
             this.cellsPerRow = function () { return _this.img.width / _this.frame.width; };
             this.getTilePos = function (index) {
                 return { x: (index % _this.cellsPerRow() * _this.frame.width), y: (Math.floor(index / _this.cellsPerRow())) * _this.frame.height };
@@ -405,6 +410,7 @@ var jBB;
                 img.scale(x, y);
             };
             this.createImage = function (width, height, frames) { return new jBB.jImage(width, height, frames, _this); };
+            this.imageRectOverlap = function (img, x, y, startX, startY, width, height) { return img.rectOverlap(x, y, startX, startY, width, height); };
             if (typeof (arg01) == "number") {
                 // (width, height, [mainloop])
                 this.data.lastID++;
@@ -580,6 +586,7 @@ function CreateImage(width, height, frames) {
     if (frames === void 0) { frames = 1; }
     return new jBB.jImage(width, height, frames, jBBContext.context);
 }
+function ImageRectOverlap(img, x, y, startX, startY, width, height) { return jBBContext.context.imageRectOverlap(img, x, y, startX, startY, width, height); }
 // ==== input ====
 // ---- mouse ----
 function MouseX() { return jBBContext.context.mouseX(); }
