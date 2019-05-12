@@ -2,11 +2,11 @@ var jBB;
 (function (jBB) {
     var jColor = /** @class */ (function () {
         function jColor(red, green, blue, alpha) {
+            var _this = this;
             if (red === void 0) { red = 0; }
             if (green === void 0) { green = 0; }
             if (blue === void 0) { blue = 0; }
             if (alpha === void 0) { alpha = 1.0; }
-            var _this = this;
             this.red = 0;
             this.green = 0;
             this.blue = 0;
@@ -591,6 +591,8 @@ function ImageRectOverlap(img, x, y, startX, startY, width, height) { return jBB
 // ---- mouse ----
 function MouseX() { return jBBContext.context.mouseX(); }
 function MouseY() { return jBBContext.context.mouseY(); }
+function MouseHit(key) { return jBBContext.context.mouseHit(key); }
+function MouseDown(key) { return jBBContext.context.mouseDown(key); }
 function FlushMouse() { jBBContext.context.flushMouse(); }
 function GetMouse() { return jBBContext.context.getMouse(); }
 // ---- keyboard ----
