@@ -591,6 +591,8 @@ function ImageRectOverlap(img, x, y, startX, startY, width, height) { return jBB
 // ---- mouse ----
 function MouseX() { return jBBContext.context.mouseX(); }
 function MouseY() { return jBBContext.context.mouseY(); }
+function MouseHit(key) { return jBBContext.context.mouseHit(key); }
+function MouseDown(key) { return jBBContext.context.mouseDown(key); }
 function FlushMouse() { jBBContext.context.flushMouse(); }
 function GetMouse() { return jBBContext.context.getMouse(); }
 // ---- keyboard ----
