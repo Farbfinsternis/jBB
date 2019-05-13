@@ -34,7 +34,15 @@
 
 				DrawText(fps + " FPS", GraphicsWidth() / 2, 40);
 
-				rot++;
+				if(MouseDown(0))
+				{
+					rot--;
+				}
+				else
+				{
+					rot++;
+				}
+
 				RotateImage(ship, rot);
 				ScaleImage(ship, 4.0, 4.0);
 				DrawImage(ship, mx, my);
