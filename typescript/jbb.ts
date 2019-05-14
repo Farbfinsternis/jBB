@@ -245,5 +245,9 @@ namespace jBB{
 		public scaleImage = (img:jImage, x:number = 1.0, y:number = 1.0) => { img.scale(x, y); }
 		public createImage = (width:number, height:number, frames:number):jImage => { return new jImage(width, height, frames, this); }
 		public imageRectOverlap = (img:jImage, x:number, y:number, startX:number, startY:number, width:number, height:number):boolean => { return img.rectOverlap(x, y, startX, startY, width, height); }
+
+		// ==== sound ====
+		public loadMusic = (filename:string) => { return new jMusic(filename); }
+		public playMusic = (sound:jMusic) => { sound.play(); }
 	}
 }

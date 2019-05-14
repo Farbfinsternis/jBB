@@ -15,14 +15,17 @@
 			
 			var fnt = LoadFont("../media/Play-Bold.ttf", "Play");
 			SetFont(fnt, 36, true);
-						
+
+			var music = LoadMusic("../media/Driven_to_Madness.mp3");
+									
 			var rot = 0;
 			var time = MilliSecs();
 			var fps = 0;
 			var tmpFps = 0;
 			function App(){
 				Cls();
-				
+				PlayMusic(music);
+
 				var mx = MouseX();
 				var my = MouseY();
 				

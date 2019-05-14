@@ -249,6 +249,9 @@ var jBB;
                 _this.data.canvas.element.height = _this.data.canvas.height;
                 _this.data.canvas.element.appendChild(document.createTextNode("your browser doesn't support the canvas element"));
                 document.body.appendChild(_this.data.canvas.element);
+                var evObj = document.createEvent('Events');
+                evObj.initEvent('onClick', true, false);
+                _this.data.canvas.element.dispatchEvent(evObj);
             };
             this.preRender = function () {
                 _this.data.canvas.ctx.save();
@@ -411,6 +414,9 @@ var jBB;
             };
             this.createImage = function (width, height, frames) { return new jBB.jImage(width, height, frames, _this); };
             this.imageRectOverlap = function (img, x, y, startX, startY, width, height) { return img.rectOverlap(x, y, startX, startY, width, height); };
+            // ==== sound ====
+            this.loadMusic = function (filename) { return new jBB.jMusic(filename); };
+            this.playMusic = function (sound) { sound.play(); };
             if (typeof (arg01) == "number") {
                 // (width, height, [mainloop])
                 this.data.lastID++;
@@ -601,6 +607,34 @@ function KeyHit(key) { return jBBContext.context.keyHit(key); }
 function FlushKeys() { jBBContext.context.flushKeys(); }
 // ==== time ====
 function MilliSecs() { return jBBContext.context.milliSecs(); }
+// ==== sound === 
+function LoadMusic(filename) { return jBBContext.context.loadMusic(filename); }
+function PlayMusic(music) { music.play(); }
+var jBB;
+(function (jBB) {
+    var jMusic = /** @class */ (function () {
+        function jMusic(filename, autoPlay, loop) {
+            var _this = this;
+            if (filename === void 0) { filename = ""; }
+            if (autoPlay === void 0) { autoPlay = true; }
+            if (loop === void 0) { loop = true; }
+            this.loaded = false;
+            this.play = function () {
+                _this.music.play();
+            };
+            if (filename !== "") {
+                this.load(filename);
+            }
+        }
+        jMusic.prototype.load = function (filename, autoPlay, loop) {
+            if (autoPlay === void 0) { autoPlay = true; }
+            if (loop === void 0) { loop = true; }
+            this.music = new Audio(filename);
+        };
+        return jMusic;
+    }());
+    jBB.jMusic = jMusic;
+})(jBB || (jBB = {}));
 var jBB;
 (function (jBB) {
     var jTime = /** @class */ (function () {

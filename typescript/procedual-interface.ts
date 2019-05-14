@@ -56,3 +56,7 @@ function FlushKeys(){ jBBContext.context.flushKeys(); }
 
 // ==== time ====
 function MilliSecs():number{ return jBBContext.context.milliSecs(); }
+
+// ==== sound === 
+function LoadMusic(filename:string){ return jBBContext.context.loadMusic(filename); }
+function PlayMusic(music:jBB.jMusic){ music.play(); }
