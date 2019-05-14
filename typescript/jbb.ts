@@ -65,7 +65,9 @@ namespace jBB{
 			this.data.keyboard = new jKeyboard(this);
 			this.data.font.default = new jFont("", "Arial", this);
 
-			window.onload = () => { this.data.ready = true; }
+			window.onload = () => {
+				this.data.ready = true;
+			}
 
 			this.createBackbuffer();
 

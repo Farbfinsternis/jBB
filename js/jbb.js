@@ -249,9 +249,6 @@ var jBB;
                 _this.data.canvas.element.height = _this.data.canvas.height;
                 _this.data.canvas.element.appendChild(document.createTextNode("your browser doesn't support the canvas element"));
                 document.body.appendChild(_this.data.canvas.element);
-                var evObj = document.createEvent('Events');
-                evObj.initEvent('onClick', true, false);
-                _this.data.canvas.element.dispatchEvent(evObj);
             };
             this.preRender = function () {
                 _this.data.canvas.ctx.save();
@@ -440,7 +437,10 @@ var jBB;
             this.data.mouse = new jBB.jMouse(this);
             this.data.keyboard = new jBB.jKeyboard(this);
             this.data.font.default = new jBB.jFont("", "Arial", this);
-            window.onload = function () { _this.data.ready = true; };
+            window.onload = function () {
+                _this.data.ready = true;
+                _this.data.canvas.element.focus();
+            };
             this.createBackbuffer();
             window.requestAnimationFrame(this.render);
         }
