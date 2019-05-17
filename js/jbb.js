@@ -148,7 +148,7 @@ var jBB;
                 var r2 = { left: startX, top: startY, right: startX + width, bottom: startY + height };
                 return !(r2.left > r1.right || r2.right < r1.left || r2.top > r1.bottom || r2.bottom < r1.top);
             };
-            this.cellsPerRow = function () { return _this.img.width / _this.frame.width; };
+            this.cellsPerRow = function () { return Math.floor(_this.img.width / _this.frame.width); };
             this.getTilePos = function (index) {
                 return { x: (index % _this.cellsPerRow() * _this.frame.width), y: (Math.floor(index / _this.cellsPerRow())) * _this.frame.height };
             };
@@ -439,7 +439,6 @@ var jBB;
             this.data.font.default = new jBB.jFont("", "Arial", this);
             window.onload = function () {
                 _this.data.ready = true;
-                _this.data.canvas.element.focus();
             };
             this.createBackbuffer();
             window.requestAnimationFrame(this.render);
@@ -514,6 +513,31 @@ var jBB;
         return jMouse;
     }());
     jBB.jMouse = jMouse;
+})(jBB || (jBB = {}));
+var jBB;
+(function (jBB) {
+    var jMusic = /** @class */ (function () {
+        function jMusic(filename, autoPlay, loop) {
+            var _this = this;
+            if (filename === void 0) { filename = ""; }
+            if (autoPlay === void 0) { autoPlay = true; }
+            if (loop === void 0) { loop = true; }
+            this.loaded = false;
+            this.play = function () {
+                _this.music.play();
+            };
+            if (filename !== "") {
+                this.load(filename);
+            }
+        }
+        jMusic.prototype.load = function (filename, autoPlay, loop) {
+            if (autoPlay === void 0) { autoPlay = true; }
+            if (loop === void 0) { loop = true; }
+            this.music = new Audio(filename);
+        };
+        return jMusic;
+    }());
+    jBB.jMusic = jMusic;
 })(jBB || (jBB = {}));
 var jBBContext = {
     context: undefined
@@ -610,31 +634,6 @@ function MilliSecs() { return jBBContext.context.milliSecs(); }
 // ==== sound === 
 function LoadMusic(filename) { return jBBContext.context.loadMusic(filename); }
 function PlayMusic(music) { music.play(); }
-var jBB;
-(function (jBB) {
-    var jMusic = /** @class */ (function () {
-        function jMusic(filename, autoPlay, loop) {
-            var _this = this;
-            if (filename === void 0) { filename = ""; }
-            if (autoPlay === void 0) { autoPlay = true; }
-            if (loop === void 0) { loop = true; }
-            this.loaded = false;
-            this.play = function () {
-                _this.music.play();
-            };
-            if (filename !== "") {
-                this.load(filename);
-            }
-        }
-        jMusic.prototype.load = function (filename, autoPlay, loop) {
-            if (autoPlay === void 0) { autoPlay = true; }
-            if (loop === void 0) { loop = true; }
-            this.music = new Audio(filename);
-        };
-        return jMusic;
-    }());
-    jBB.jMusic = jMusic;
-})(jBB || (jBB = {}));
 var jBB;
 (function (jBB) {
     var jTime = /** @class */ (function () {

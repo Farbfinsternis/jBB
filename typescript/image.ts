@@ -111,7 +111,7 @@ namespace jBB{
 			return !(r2.left > r1.right || r2.right < r1.left || r2.top > r1.bottom || r2.bottom < r1.top);
 		}
 
-		private cellsPerRow = ():number => { return this.img.width / this.frame.width; }
+		private cellsPerRow = ():number => { return Math.floor(this.img.width / this.frame.width); }
 		private getTilePos = (index:number):any => {
 			return { x : (index % this.cellsPerRow() * this.frame.width), y : (Math.floor(index / this.cellsPerRow())) * this.frame.height };
 		}
