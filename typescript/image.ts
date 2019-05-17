@@ -7,6 +7,7 @@ namespace jBB{
 		private ctx:Core;
 		private cnv:any;
 		private frame = { num : 1, width : 0, height: 0, start: 1, current: 1 };
+		private cell = {columns : 0, rows : 0};
 		private hndl = { x : 0, y : 0 };
 		private autoMidHandle:boolean = false;
 		private localMidHandle:boolean = false;
@@ -14,21 +15,32 @@ namespace jBB{
 		private rotation:number = 0;
 
 		constructor(width:number, height:number, frames:number, context:Core)
+		constructor(path:string, cellColumns:number, cellRows:number, startCell:number, context:Core)
 		constructor(path:string, cellWidth:number, cellHeight:number, startCell:number, cellCount:number, context:Core)
 		constructor(arg01?:any, arg02?:any, arg03?:any, arg04?:any, arg05?:any, arg06?:any){
-			this.ctx = arg06;
-			this.cnv = this.ctx.data.canvas.ctx;
-			this.autoMidHandle = this.ctx.data.global.autoMidHandle;
-
+			
 			if(typeof(arg01) === "string"){
 				// load image
 				this.img.src = arg01;
 
-				if(typeof(arg02) === "number") this.frame.width = arg02;
-				if(typeof(arg03) === "number") this.frame.height = arg03;
+				// called by cellColumns and cellRows
+				if(arguments.length === 5){
+					if(typeof(arg02) === "number") this.cell.columns = arg02;
+					if(typeof(arg03) === "number") this.cell.rows = arg03;
+					this.frame.num = this.cell.columns * this.cell.rows;
+					this.ctx = arg05;
+				}
+				// called by cellWidth and cellHeight
+				else if(arguments.length === 6){
+					if(typeof(arg02) === "number") this.frame.width = arg02;
+					if(typeof(arg03) === "number") this.frame.height = arg03;
+					this.frame.num = arg05;
+					this.ctx = arg06;
+				}
+				
 				this.frame.start = arg04;
-				this.frame.num = arg05;
-				this.ctx = arg06;
+				this.cnv = this.ctx.data.canvas.ctx;
+				this.autoMidHandle = this.ctx.data.global.autoMidHandle;
 
 				this.img.onload = (data) => {
 					this.loaded = true;
@@ -36,7 +48,17 @@ namespace jBB{
 					if(this.frame.num === 1){
 						this.frame.width = this.img.width;
 						this.frame.height = this.img.height;
-					} 
+						this.cell.columns = 1;
+						this.cell.rows = 1;
+					}
+					else if(this.frame.num >= 2)
+					{
+						// called by cellColumns and cellRows
+						if(this.cell.columns + this.cell.rows > 0){
+							this.frame.width = Math.floor(this.img.width / this.cell.columns);
+							this.frame.height = Math.floor(this.img.height / this.cell.rows);
+						}
+					}
 				}
 
 			}else if(typeof(arg01) === "number"){
