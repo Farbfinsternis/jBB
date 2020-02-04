@@ -14,12 +14,24 @@ namespace jBB{
 			this.ctx.data.canvas.element.onmousemove = this.saveMousePos;
 			this.ctx.data.canvas.element.onmousedown = this.saveMouseDown;
 			this.ctx.data.canvas.element.onmouseup = this.saveMouseUp;
+			this.ctx.data.canvas.element.ontouchmove = this.saveMousePos;
+			this.ctx.data.canvas.element.ontouchstart = this.saveMouseDown;
+			this.ctx.data.canvas.element.ontouchend = this.saveMouseUp;
 		}
 
 		private saveMousePos = (event:any) => {
 			var r = this.ctx.data.canvas.element.getBoundingClientRect();
 			this.x = event.clientX - r.left;
 			this.y = event.clientY - r.top;
+
+			var touches = event.changedTouches;
+			if(touches.length > 0){
+				for(var i=0; i < event.changedTouches.length; i++) {
+					var touchId = event.changedTouches[i].identifier;
+					this.x       = event.changedTouches[i].pageX - r.left;
+					this.y       = event.changedTouches[i].pageY - r.top;
+				}
+			}
 		}
 
 		private saveMouseDown = (event) => { this.keys[event.button] = true; }

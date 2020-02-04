@@ -76,6 +76,7 @@ namespace jBB{
 			var origY = y;
 			x /= this.scaleFac.x;
 			y /= this.scaleFac.y;
+			if(frame > this.frame.num) frame = this.frame.current;
 
 			if(this.loaded == true){
 				var tilePos = this.getTilePos(frame - 1);

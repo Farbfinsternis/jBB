@@ -93,6 +93,8 @@ var jBB;
                 var origY = y;
                 x /= _this.scaleFac.x;
                 y /= _this.scaleFac.y;
+                if (frame > _this.frame.num)
+                    frame = _this.frame.current;
                 if (_this.loaded == true) {
                     var tilePos = _this.getTilePos(frame - 1);
                     var dx = x - _this.hndl.x;
@@ -464,6 +466,7 @@ var jBB;
             this.data.font.default = new jBB.jFont("", "Arial", this);
             window.onload = function () {
                 _this.data.ready = true;
+                _this.data.canvas.element.focus();
             };
             this.createBackbuffer();
             window.requestAnimationFrame(this.render);
@@ -507,6 +510,14 @@ var jBB;
                 var r = _this.ctx.data.canvas.element.getBoundingClientRect();
                 _this.x = event.clientX - r.left;
                 _this.y = event.clientY - r.top;
+                var touches = event.changedTouches;
+                if (touches.length > 0) {
+                    for (var i = 0; i < event.changedTouches.length; i++) {
+                        var touchId = event.changedTouches[i].identifier;
+                        _this.x = event.changedTouches[i].pageX - r.left;
+                        _this.y = event.changedTouches[i].pageY - r.top;
+                    }
+                }
             };
             this.saveMouseDown = function (event) { _this.keys[event.button] = true; };
             this.saveMouseUp = function (event) { _this.keys[event.button] = false; };
@@ -534,6 +545,9 @@ var jBB;
             this.ctx.data.canvas.element.onmousemove = this.saveMousePos;
             this.ctx.data.canvas.element.onmousedown = this.saveMouseDown;
             this.ctx.data.canvas.element.onmouseup = this.saveMouseUp;
+            this.ctx.data.canvas.element.ontouchmove = this.saveMousePos;
+            this.ctx.data.canvas.element.ontouchstart = this.saveMouseDown;
+            this.ctx.data.canvas.element.ontouchend = this.saveMouseUp;
         }
         return jMouse;
     }());

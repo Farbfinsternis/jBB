@@ -10,7 +10,7 @@
 			ClsColor(30, 60, 90);
 			TFormFilter(false);
 
-			var ship = LoadImage("../media/ship.png");
+			var ship = LoadImage("../media/ship.png", 16);
 			MidHandle(ship, true);
 			
 			var fnt = LoadFont("../media/Play-Bold.ttf", "Play");
@@ -48,7 +48,7 @@
 
 				RotateImage(ship, rot);
 				ScaleImage(ship, 4.0, 4.0);
-				DrawImage(ship, mx, my);
+				DrawImage(ship, mx, my, 3);
 				
 				tmpFps++;
 				var tmpTime = MilliSecs()

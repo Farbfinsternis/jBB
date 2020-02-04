@@ -67,6 +67,7 @@ namespace jBB{
 
 			window.onload = () => {
 				this.data.ready = true;
+				this.data.canvas.element.focus();
 			}
 
 			this.createBackbuffer();
