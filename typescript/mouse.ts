@@ -25,7 +25,7 @@ namespace jBB{
 			this.y = event.clientY - r.top;
 
 			var touches = event.changedTouches;
-			if(touches.length > 0){
+			if(touches && touches.length){
 				for(var i=0; i < event.changedTouches.length; i++) {
 					var touchId = event.changedTouches[i].identifier;
 					this.x       = event.changedTouches[i].pageX - r.left;

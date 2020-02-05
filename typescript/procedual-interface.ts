@@ -61,3 +61,6 @@ function MilliSecs():number{ return jBBContext.context.milliSecs(); }
 // ==== sound === 
 function LoadMusic(filename:string){ return jBBContext.context.loadMusic(filename); }
 function PlayMusic(music:jBB.jMusic){ music.play(); }
+
+// ==== file === 
+function OpenFile(filename:string){ return jBBContext.context.openFile(filename); }

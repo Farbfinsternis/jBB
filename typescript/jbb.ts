@@ -33,7 +33,9 @@ namespace jBB{
 			mouse : null,
 			keyboard : null,
 			time : new jTime(),
-			font : { current : null, default : null }
+			font : { current : null, default : null },
+
+			db : null
 		};
 
 		constructor(canvasID:string)
@@ -59,12 +61,15 @@ namespace jBB{
 				this.getCanvasElement();
 			}
 
+			// canvas
 			this.data.canvas.ctx = this.data.canvas.element.getContext('2d');
 			this.data.canvas.ctx.lineWidth = 1;
+			// input
 			this.data.mouse = new jMouse(this);
 			this.data.keyboard = new jKeyboard(this);
+			// font
 			this.data.font.default = new jFont("", "Arial", this);
-
+									
 			window.onload = () => {
 				this.data.ready = true;
 				this.data.canvas.element.focus();
@@ -253,5 +258,9 @@ namespace jBB{
 		// ==== sound ====
 		public loadMusic = (filename:string) => { return new jMusic(filename); }
 		public playMusic = (sound:jMusic) => { sound.play(); }
+
+		// ==== file ====
+		public openFile = (filename:string) => { return new jFile(filename); }
+		public readString = (fileHandle:jFile):string => { return fileHandle.readString(); }
 	}
 }

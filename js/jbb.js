@@ -35,6 +35,42 @@ var jBB;
 })(jBB || (jBB = {}));
 var jBB;
 (function (jBB) {
+    var jFile = /** @class */ (function () {
+        function jFile(filename) {
+            var _this = this;
+            this._onDBOpenSuccess = function (evt) {
+                _this.db = evt.target.result;
+                var val = _this.db.transaction([_this.filename], 'readwrite').objectStore(_this.filename).get(1);
+                val.onsuccess = function () {
+                    _this.content = val.result.content;
+                    console.log(_this.content);
+                };
+            };
+            this._onDBUpgradeNeeded = function (evt) {
+                _this.db = evt.target.result;
+                if (!_this.db.objectStoreNames.contains(_this.filename)) {
+                    _this.objectStore = _this.db.createObjectStore(_this.filename, { keyPath: 'id' });
+                }
+            };
+            this._onDBOpenError = function (evt) { console.log(evt.target.errorCode); };
+            this.writeString = function (value) {
+            };
+            this.readString = function () {
+                var result = null;
+                return result;
+            };
+            this.filename = filename;
+            var request = window.indexedDB.open('jBBIDB', 1);
+            request.onsuccess = this._onDBOpenSuccess;
+            request.onerror = this._onDBOpenError;
+            request.onupgradeneeded = this._onDBUpgradeNeeded;
+        }
+        return jFile;
+    }());
+    jBB.jFile = jFile;
+})(jBB || (jBB = {}));
+var jBB;
+(function (jBB) {
     var jFont = /** @class */ (function () {
         function jFont(path, name, context) {
             var _this = this;
@@ -244,7 +280,8 @@ var jBB;
                 mouse: null,
                 keyboard: null,
                 time: new jBB.jTime(),
-                font: { current: null, default: null }
+                font: { current: null, default: null },
+                db: null
             };
             this.createBackbuffer = function () {
                 var bbuf = document.createElement("canvas");
@@ -441,6 +478,9 @@ var jBB;
             // ==== sound ====
             this.loadMusic = function (filename) { return new jBB.jMusic(filename); };
             this.playMusic = function (sound) { sound.play(); };
+            // ==== file ====
+            this.openFile = function (filename) { return new jBB.jFile(filename); };
+            this.readString = function (fileHandle) { return fileHandle.readString(); };
             if (typeof (arg01) == "number") {
                 // (width, height, [mainloop])
                 this.data.lastID++;
@@ -459,10 +499,13 @@ var jBB;
                     this.data.mainLoop = arg02;
                 this.getCanvasElement();
             }
+            // canvas
             this.data.canvas.ctx = this.data.canvas.element.getContext('2d');
             this.data.canvas.ctx.lineWidth = 1;
+            // input
             this.data.mouse = new jBB.jMouse(this);
             this.data.keyboard = new jBB.jKeyboard(this);
+            // font
             this.data.font.default = new jBB.jFont("", "Arial", this);
             window.onload = function () {
                 _this.data.ready = true;
@@ -511,7 +554,7 @@ var jBB;
                 _this.x = event.clientX - r.left;
                 _this.y = event.clientY - r.top;
                 var touches = event.changedTouches;
-                if (touches.length > 0) {
+                if (touches && touches.length) {
                     for (var i = 0; i < event.changedTouches.length; i++) {
                         var touchId = event.changedTouches[i].identifier;
                         _this.x = event.changedTouches[i].pageX - r.left;
@@ -681,6 +724,8 @@ function MilliSecs() { return jBBContext.context.milliSecs(); }
 // ==== sound === 
 function LoadMusic(filename) { return jBBContext.context.loadMusic(filename); }
 function PlayMusic(music) { music.play(); }
+// ==== file === 
+function OpenFile(filename) { return jBBContext.context.openFile(filename, jBBContext.context); }
 var jBB;
 (function (jBB) {
     var jTime = /** @class */ (function () {
