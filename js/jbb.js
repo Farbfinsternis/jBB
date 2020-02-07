@@ -42,8 +42,13 @@ var jBB;
                 _this.db = evt.target.result;
                 var val = _this.db.transaction([_this.filename], 'readwrite').objectStore(_this.filename).get(1);
                 val.onsuccess = function () {
-                    _this.content = val.result.content;
-                    console.log(_this.content);
+                    if (val.hasOwnProperty('result') && val.result.hasOwnProperty('content'))
+                        _this.content = val.result.content;
+                };
+                val.onerror = function () {
+                    // wenn die Datei noch nicht existiert soll sie angelegt werden
+                    var newFile = _this.db.transaction([_this.filename], 'readwrite').objectStore(_this.filename).put({ 'id': 1, 'content': 'test\n' });
+                    _this.content = '';
                 };
             };
             this._onDBUpgradeNeeded = function (evt) {
@@ -725,7 +730,7 @@ function MilliSecs() { return jBBContext.context.milliSecs(); }
 function LoadMusic(filename) { return jBBContext.context.loadMusic(filename); }
 function PlayMusic(music) { music.play(); }
 // ==== file === 
-function OpenFile(filename) { return jBBContext.context.openFile(filename, jBBContext.context); }
+function OpenFile(filename) { return jBBContext.context.openFile(filename); }
 var jBB;
 (function (jBB) {
     var jTime = /** @class */ (function () {

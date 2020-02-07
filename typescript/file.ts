@@ -14,13 +14,23 @@ namespace jBB{
 			request.onupgradeneeded = this._onDBUpgradeNeeded;
 		}
 
+		private _get = ():any => {
+
+		}
+
+		private _put = (value:any) => {
+			
+		}
+
 		private _onDBOpenSuccess = (evt) => {
 			this.db = evt.target.result;
 			var val = this.db.transaction([this.filename], 'readwrite').objectStore(this.filename).get(1);
-			val.onsuccess = () => { this.content = val.result.content; }
+			val.onsuccess = () => {
+				if(val.hasOwnProperty('result') && val.result.hasOwnProperty('content')) this.content = val.result.content;
+			}
 			val.onerror = () => {
 				// wenn die Datei noch nicht existiert soll sie angelegt werden
-				var newFile = this.db.transaction([this.filename], 'readwrite').objectStore(this.filename).put({ 'id' : 1, 'content' : '' });
+				var newFile = this.db.transaction([this.filename], 'readwrite').objectStore(this.filename).put({ 'id' : 1, 'content' : 'test\n' });
 				this.content = '';
 			}
 		}
