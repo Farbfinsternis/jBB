@@ -18,7 +18,6 @@ namespace jBB{
 			},
 			
 			mainLoop : "main",
-			parentElement: null,
 
 			color : {
 				cls : new jColor(),
@@ -101,6 +100,8 @@ namespace jBB{
 
 		private getCanvasElement = () => {
 			this.data.canvas.element = document.getElementById(this.data.canvas.id);
+			this.data.canvas.width = this.data.canvas.element.width;
+			this.data.canvas.height = this.data.canvas.element.height;
 		}
 
 		private createCanvasElement = () => {
@@ -109,13 +110,6 @@ namespace jBB{
 			this.data.canvas.element.width = this.data.canvas.width;
 			this.data.canvas.element.height = this.data.canvas.height;
 			this.data.canvas.element.appendChild(document.createTextNode("your browser doesn't support the canvas element"));
-			var parent:HTMLElement = document.getElementById(this.data.parentElement);
-			if(parent) {
-				parent.appendChild(this.data.canvas.element);
-			}
-			else {
-				document.body.appendChild(this.data.canvas.element);
-			}
 		}
 
 		private preRender = () => {
