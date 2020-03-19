@@ -38,6 +38,10 @@ var jBB;
     var jFile = /** @class */ (function () {
         function jFile(filename) {
             var _this = this;
+            this._get = function () {
+            };
+            this._put = function (value) {
+            };
             this._onDBOpenSuccess = function (evt) {
                 _this.db = evt.target.result;
                 var val = _this.db.transaction([_this.filename], 'readwrite').objectStore(_this.filename).get(1);
@@ -306,6 +310,8 @@ var jBB;
             };
             this.getCanvasElement = function () {
                 _this.data.canvas.element = document.getElementById(_this.data.canvas.id);
+                _this.data.canvas.width = _this.data.canvas.element.width;
+                _this.data.canvas.height = _this.data.canvas.element.height;
             };
             this.createCanvasElement = function () {
                 _this.data.canvas.element = document.createElement("canvas");
@@ -313,7 +319,6 @@ var jBB;
                 _this.data.canvas.element.width = _this.data.canvas.width;
                 _this.data.canvas.element.height = _this.data.canvas.height;
                 _this.data.canvas.element.appendChild(document.createTextNode("your browser doesn't support the canvas element"));
-                document.body.appendChild(_this.data.canvas.element);
             };
             this.preRender = function () {
                 _this.data.canvas.ctx.save();
@@ -635,6 +640,10 @@ function Graphics(width, height, mainLoop) {
     if (height === void 0) { height = 480; }
     if (mainLoop === void 0) { mainLoop = "main"; }
     jBBContext.context = new jBB.Core(width, height, mainLoop);
+}
+function GraphicsFrom(canvasID, mainLoop) {
+    if (mainLoop === void 0) { mainLoop = "main"; }
+    jBBContext.context = new jBB.Core(canvasID, mainLoop);
 }
 function Cls() { jBBContext.context.cls(); }
 function ClsColor(red, green, blue) {

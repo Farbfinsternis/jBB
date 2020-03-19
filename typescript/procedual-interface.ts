@@ -3,6 +3,7 @@ let jBBContext = {
 };
 // ==== graphics ====
 function Graphics(width:number = 640, height:number = 480, mainLoop:string = "main"){ jBBContext.context = new jBB.Core(width, height, mainLoop); }
+function GraphicsFrom(canvasID:string, mainLoop:string = "main"){ jBBContext.context = new jBB.Core(canvasID, mainLoop); }
 function Cls(){ jBBContext.context.cls(); }
 function ClsColor(red:number = 0, green:number = 0, blue:number = 0){ jBBContext.context.clsColor(red, green, blue); }
 function Color(red:number = 255, green:number = 255, blue:number = 255, alpha:number = 1.0){ jBBContext.context.color(red, green, blue, alpha); }
