@@ -2,11 +2,11 @@ var jBB;
 (function (jBB) {
     var jColor = /** @class */ (function () {
         function jColor(red, green, blue, alpha) {
-            var _this = this;
             if (red === void 0) { red = 0; }
             if (green === void 0) { green = 0; }
             if (blue === void 0) { blue = 0; }
             if (alpha === void 0) { alpha = 1.0; }
+            var _this = this;
             this.red = 0;
             this.green = 0;
             this.blue = 0;
@@ -610,10 +610,10 @@ var jBB;
 (function (jBB) {
     var jMusic = /** @class */ (function () {
         function jMusic(filename, autoPlay, loop) {
-            var _this = this;
             if (filename === void 0) { filename = ""; }
             if (autoPlay === void 0) { autoPlay = true; }
             if (loop === void 0) { loop = true; }
+            var _this = this;
             this.loaded = false;
             this.play = function () {
                 _this.music.play();
