@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: modules/image.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: modules/image.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * Represents a drawable image, which can be a single static image,
+ * an animated spritesheet, or a blank canvas for off-screen rendering.
+ */
+export class Jmage{
+	/** @private */
+	#jBBInstance;
+	/** @private */
+	#el; #ready;
+	/** @private */
+	#frame; #firstFrame; #frameCount;
+	/** @private */
+	#scaleFactor;
+	/** @private */
+	#rotation;
+	/** @private */
+	#handle; #localMidHandle;
+	/** @private */
+	#imageData;
+	/** @private */
+	#imageDataCache = null;
+	/** @private */
+	#bufferCanvas = null;
+	/** @private */
+	#bufferContext = null;
+
+	/** @param {object} jbbInstance A reference to the main jBB class instance. */
+	constructor(jBBInstance){
+		this.#jBBInstance = jBBInstance;
+		this.#el = new Image();
+		this.#ready = false;
+
+		this.#frame = { width : 0, height : 0 };
+		this.#firstFrame = 1;
+		this.#frameCount = 1;
+
+		this.#scaleFactor = { x : 1.0, y : 1.0 };
+		this.#rotation = 0;
+
+		this.#handle = { x : 0, y : 0 };
+		this.#localMidHandle = false;
+	}
+
+	/**
+	 * @private
+	 * Internal callback executed when the underlying image element has finished loading.
+	 */
+	onImageLoaded(){
+		this.#ready = true;
+		if(this.#frameCount &lt;= 1){
+			this.#frame = { width : this.#el.width, height : this.#el.height };
+		}
+
+		// If AutoMidHandle is on globally, or if MidHandle() was called for this specific
+		// image before it finished loading, apply the mid handle logic now.
+		if (this.#jBBInstance.isAutoMidHandle() || this.#localMidHandle) {
+			this.#handle.x = this.#frame.width / 2;
+			this.#handle.y = this.#frame.height / 2;
+			this.#localMidHandle = true; 
+		}
+	}
+
+	/**
+	 * Loads a static image from a given path.
+	 * @param {string} path The URL or path to the image file.
+	 * @returns {Promise&lt;Jmage>} A promise that resolves with this Jmage instance when loading is complete.
+	 */
+	load(path){
+		return new Promise((resolve, reject) => {
+			this.#el.src = path;
+			this.#frameCount = 1;
+			this.#el.addEventListener("load", () => {
+				this.onImageLoaded();
+				resolve(this);
+			});
+			this.#el.addEventListener("error", (e) => {
+				const error = new Error(`jBB Image: Failed to load image at ${path}`);
+				console.error(error, e);
+				reject(error);
+			});
+		});
+	}
+
+	/**
+	 * @private
+	 * Creates a blank, drawable image.
+	 * @param {number} width The width of the new image.
+	 * @param {number} height The height of the new image.
+	 */
+	createBlank(width, height) {
+		this.#frame = { width: width, height: height };
+		this.#ready = true; // It's ready for drawing immediately
+		this.getBufferContext(); // Ensure the buffer is created
+	}
+
+	/**
+	 * Loads an image strip for animation.
+	 * @param {string} path The URL or path to the spritesheet file.
+	 * @param {number} width The width of a single animation frame.
+	 * @param {number} height The height of a single animation frame.
+	 * @param {number} first The index of the first frame to use in the animation (1-based).
+	 * @param {number} count The total number of frames in the animation.
+	 * @returns {Promise&lt;Jmage>} A promise that resolves with this Jmage instance when loading is complete.
+	 */
+	loadAnim(path, width, height, first, count){
+		return new Promise((resolve, reject) => {
+			this.#el.src = path;
+			this.#frame = { width : width, height : height };
+			this.#firstFrame = first;
+			this.#frameCount = count;
+			this.#el.addEventListener("load", () => {
+				this.onImageLoaded();
+				resolve(this);
+			});
+			this.#el.addEventListener("error", (e) => {
+				const error = new Error(`jBB Image: Failed to load anim image at ${path}`);
+				console.error(error, e);
+				reject(error);
+			});
+		});
+	}
+
+	/**
+	 * Sets the image's drawing handle to its center.
+	 * If the image is not yet loaded, this action is deferred until loading is complete.
+	 */
+	midHandle(){
+		this.#localMidHandle = true;
+
+		if (this.#ready) {
+			this.#handle.x = this.#frame.width / 2;
+			this.#handle.y = this.#frame.height / 2;
+		}
+	}
+
+
+	/**
+	 * Sets the image's drawing handle to a specific coordinate.
+	 * @param {number} x The x-coordinate of the handle.
+	 * @param {number} y The y-coordinate of the handle.
+	 */
+	setHandle(x, y){
+		this.#handle.x = x;
+		this.#handle.y = y;
+		this.#localMidHandle = false;
+	}
+
+	/**
+	 * Scales the image. A negative value will flip the image on that axis.
+	 * @param {number} [x=1.0] The horizontal scale factor.
+	 * @param {number} [y=1.0] The vertical scale factor.
+	 */
+	scale(x = 1.0, y = 1.0){
+		this.#scaleFactor = { x : x, y : y };
+	}
+
+	/**
+	 * Rotates the image by a given number of degrees.
+	 * @param {number} value The rotation in degrees (0-360).
+	 */
+	rotate(value){
+		this.#rotation = value;
+	}
+
+	/**
+	 * @private
+	 * Draws the image (or a specific frame of it) to the active drawing context.
+	 */
+	draw(x, y, frame = 1){
+		const sourceElement = this.#bufferCanvas || this.#el;
+		
+		if(frame &lt; 1) frame = 1;
+		if(frame > this.#frameCount) frame = this.#frameCount;
+
+		if(this.#ready == true){
+			this.#jBBInstance.canvas.save();
+
+			const frameIndexOnSheet = (this.#firstFrame - 1) + (frame - 1);
+			let framePos = this.getFramePos(frameIndexOnSheet);
+
+			this.#jBBInstance.canvas.translate(x, y);
+			this.#jBBInstance.canvas.rotate(this.#rotation * Math.PI / 180);
+			this.#jBBInstance.canvas.scale(this.#scaleFactor.x, this.#scaleFactor.y);
+
+			let drawX = -this.#handle.x;
+			let drawY = -this.#handle.y;
+
+			this.#jBBInstance.canvas.drawImage(sourceElement, framePos.x, framePos.y, this.#frame.width, this.#frame.height, drawX, drawY, this.#frame.width, this.#frame.height);
+			
+			this.#jBBInstance.canvas.restore();
+		}
+	}
+
+	/**
+	 * @private
+	 * Creates a new Jmage instance that is a copy of this one.
+	 * @returns {Jmage} A new Jmage instance with the same properties.
+	 */
+	clone() {
+		const newImage = new Jmage(this.#jBBInstance);
+
+		// Copy essential properties. The image element itself is shared, which is typical for BlitzBasic's CopyImage.
+		newImage.#el = this.#el;
+		newImage.#ready = this.#ready;
+		newImage.#frame = { ...this.#frame };
+		newImage.#firstFrame = this.#firstFrame;
+		newImage.#frameCount = this.#frameCount;
+		newImage.#scaleFactor = { ...this.#scaleFactor };
+		newImage.#rotation = this.#rotation;
+		newImage.#handle = { ...this.#handle };
+		newImage.#localMidHandle = this.#localMidHandle;
+
+		// If the source is a created image that has been drawn on, the copy needs
+		// its own buffer with the same pixel content.
+		if (this.#bufferCanvas) {
+			const newBufferCtx = newImage.getBufferContext(); // Creates the canvas for the new image
+			if(newBufferCtx) newBufferCtx.drawImage(this.#bufferCanvas, 0, 0);
+		}
+
+		// Note: The buffer canvas and image data cache are not copied,
+		// they will be generated on demand for the new instance.
+
+		return newImage;
+	}
+
+	/**
+	 * @private
+	 * Calculates how many animation frames fit in a single row of the spritesheet.
+	 * @returns {number}
+	 */
+	framesPerRow(){
+		return Math.floor(this.#el.width / this.#frame.width);
+	}
+	
+	/**
+	 * @private
+	 * Calculates the top-left (x,y) pixel coordinate of a given frame on the spritesheet.
+	 * @param {number} frame The 0-based index of the frame.
+	 * @returns {{x: number, y: number}}
+	 */
+	getFramePos(frame){
+		return {
+			x : (frame % this.framesPerRow() * this.#frame.width),
+			y : (Math.floor(frame / this.framesPerRow())) * this.#frame.height
+		};
+	}
+
+	/**
+	 * The width of a single frame of the image.
+	 * @returns {number}
+	 */
+	get width(){
+		return this.#frame.width;
+	}
+
+	/**
+	 * The height of a single frame of the image.
+	 * @returns {number}
+	 */
+	get height(){
+		return this.#frame.height;
+	}
+
+	/**
+	 * The current drawing handle of the image.
+	 * @returns {{x: number, y: number}}
+	 */
+	get handle(){
+		return this.#handle;
+	}
+
+	/**
+	 * The current scale factor of the image.
+	 * @returns {{x: number, y: number}}
+	 */
+	get scaleFactor(){
+		return this.#scaleFactor;
+	}
+
+	/**
+	 * The current rotation of the image in degrees.
+	 * @returns {number}
+	 */
+	get rotation(){
+		return this.#rotation;
+	}
+
+	/**
+	 * The underlying drawable element (either an HTMLImageElement or an off-screen HTMLCanvasElement).
+	 * @returns {HTMLImageElement|HTMLCanvasElement}
+	 */
+	get el(){
+		return this.#bufferCanvas || this.#el;
+	}
+
+	/**
+	 * @private
+	 * Returns the raw ImageData object for this image.
+	 * The data is cached after the first call for performance.
+	 * @returns {ImageData|null}
+	 */
+	getImageData() {
+		if (this.#imageDataCache) {
+			return this.#imageDataCache;
+		}
+		if (!this.#ready) {
+			return null;
+		}
+		const tempCanvas = document.createElement('canvas');
+		tempCanvas.width = this.#el.width;
+		tempCanvas.height = this.#el.height;
+		const tempCtx = tempCanvas.getContext('2d');
+		tempCtx.drawImage(this.#el, 0, 0);
+		this.#imageDataCache = tempCtx.getImageData(0, 0, this.#el.width, this.#el.height);
+		return this.#imageDataCache;
+	}
+
+	/**
+	 * @private
+	 * Creates (if necessary) and returns a 2D context for drawing onto this image.
+	 * @returns {CanvasRenderingContext2D|null}
+	 */
+	getBufferContext() {
+		if (!this.#bufferContext) {
+			if (!this.#ready) return null; // Can't create buffer for an unloaded image
+			this.#bufferCanvas = document.createElement('canvas');
+			if (this.#el.width > 0 &amp;&amp; this.#el.height > 0) {
+				this.#bufferCanvas.width = this.#el.width;
+				this.#bufferCanvas.height = this.#el.height;
+			} else {
+				this.#bufferCanvas.width = this.#frame.width;
+				this.#bufferCanvas.height = this.#frame.height;
+			}
+			this.#bufferContext = this.#bufferCanvas.getContext('2d');
+			if (this.#el.width > 0) this.#bufferContext.drawImage(this.#el, 0, 0);
+		}
+		return this.#bufferContext;
+	}
+}</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="Canvas.html">Canvas</a></li><li><a href="global.html#Color">Color</a></li><li><a href="File.html">File</a></li><li><a href="Font.html">Font</a></li><li><a href="Jmage.html">Jmage</a></li><li><a href="Joy.html">Joy</a></li><li><a href="Keyboard.html">Keyboard</a></li><li><a href="Maths.html">Maths</a></li><li><a href="Mouse.html">Mouse</a></li><li><a href="Physics.html">Physics</a></li><li><a href="Sound.html">Sound</a></li><li><a href="Stubs.html">Stubs</a></li><li><a href="Time.html">Time</a></li><li><a href="jBB.html">jBB</a></li></ul><h3>Global</h3><ul><li><a href="global.html#AutoMidHandle">AutoMidHandle</a></li><li><a href="global.html#BackBuffer">BackBuffer</a></li><li><a href="global.html#ChangeDir">ChangeDir</a></li><li><a href="global.html#ChannelPlaying">ChannelPlaying</a></li><li><a href="global.html#ChannelVolume">ChannelVolume</a></li><li><a href="global.html#CloseDir">CloseDir</a></li><li><a href="global.html#CloseFile">CloseFile</a></li><li><a href="global.html#Cls">Cls</a></li><li><a href="global.html#ClsColor">ClsColor</a></li><li><a href="global.html#CopyFile">CopyFile</a></li><li><a href="global.html#CopyImage">CopyImage</a></li><li><a href="global.html#CreateDir">CreateDir</a></li><li><a href="global.html#CreateImage">CreateImage</a></li><li><a href="global.html#CreateType">CreateType</a></li><li><a href="global.html#CurrentDir">CurrentDir</a></li><li><a href="global.html#DeleteDir">DeleteDir</a></li><li><a href="global.html#DeleteFile">DeleteFile</a></li><li><a href="global.html#DownloadFile">DownloadFile</a></li><li><a href="global.html#DrawImage">DrawImage</a></li><li><a href="global.html#DrawText">DrawText</a></li><li><a href="global.html#Eof">Eof</a></li><li><a href="global.html#FileExists">FileExists</a></li><li><a href="global.html#FilePos">FilePos</a></li><li><a href="global.html#FileSize">FileSize</a></li><li><a href="global.html#FileType">FileType</a></li><li><a href="global.html#Float">Float</a></li><li><a href="global.html#FontHeight">FontHeight</a></li><li><a href="global.html#FontWidth">FontWidth</a></li><li><a href="global.html#FreeSound">FreeSound</a></li><li><a href="global.html#GrabImage">GrabImage</a></li><li><a href="global.html#Graphics">Graphics</a></li><li><a href="global.html#GraphicsHeight">GraphicsHeight</a></li><li><a href="global.html#GraphicsWidth">GraphicsWidth</a></li><li><a href="global.html#ImageHandle">ImageHandle</a></li><li><a href="global.html#ImageHeight">ImageHeight</a></li><li><a href="global.html#ImageWidth">ImageWidth</a></li><li><a href="global.html#ImageXHandle">ImageXHandle</a></li><li><a href="global.html#ImageYHandle">ImageYHandle</a></li><li><a href="global.html#ImagesCollide">ImagesCollide</a></li><li><a href="global.html#ImagesOverlap">ImagesOverlap</a></li><li><a href="global.html#Int">Int</a></li><li><a href="global.html#JoyDown">JoyDown</a></li><li><a href="global.html#JoyType">JoyType</a></li><li><a href="global.html#JoyX">JoyX</a></li><li><a href="global.html#JoyY">JoyY</a></li><li><a href="global.html#KeyDown">KeyDown</a></li><li><a href="global.html#KeyHit">KeyHit</a></li><li><a href="global.html#Line">Line</a></li><li><a href="global.html#LoadAnimImage">LoadAnimImage</a></li><li><a href="global.html#LoadBrush">LoadBrush</a></li><li><a href="global.html#LoadFont">LoadFont</a></li><li><a href="global.html#LoadImage">LoadImage</a></li><li><a href="global.html#LoadSound">LoadSound</a></li><li><a href="global.html#LoadTextFile">LoadTextFile</a></li><li><a href="global.html#LoopSound">LoopSound</a></li><li><a href="global.html#MidHandle">MidHandle</a></li><li><a href="global.html#Millisecs">Millisecs</a></li><li><a href="global.html#MouseDown">MouseDown</a></li><li><a href="global.html#MouseHit">MouseHit</a></li><li><a href="global.html#MouseX">MouseX</a></li><li><a href="global.html#MouseY">MouseY</a></li><li><a href="global.html#MusicVolume">MusicVolume</a></li><li><a href="global.html#NextFile">NextFile</a></li><li><a href="global.html#OpenFile">OpenFile</a></li><li><a href="global.html#Oval">Oval</a></li><li><a href="global.html#PauseMusic">PauseMusic</a></li><li><a href="global.html#Pi">Pi</a></li><li><a href="global.html#PlayMusic">PlayMusic</a></li><li><a href="global.html#PlaySound">PlaySound</a></li><li><a href="global.html#Plot">Plot</a></li><li><a href="global.html#Rand">Rand</a></li><li><a href="global.html#ReadDir">ReadDir</a></li><li><a href="global.html#ReadFile">ReadFile</a></li><li><a href="global.html#ReadPixel">ReadPixel</a></li><li><a href="global.html#Rect">Rect</a></li><li><a href="global.html#RectsOverlap">RectsOverlap</a></li><li><a href="global.html#ResumeMusic">ResumeMusic</a></li><li><a href="global.html#RotateImage">RotateImage</a></li><li><a href="global.html#ScaleImage">ScaleImage</a></li><li><a href="global.html#SeekFile">SeekFile</a></li><li><a href="global.html#SetBlendMode">SetBlendMode</a></li><li><a href="global.html#SetBuffer">SetBuffer</a></li><li><a href="global.html#SetFont">SetFont</a></li><li><a href="global.html#SoundPan">SoundPan</a></li><li><a href="global.html#SoundPitch">SoundPitch</a></li><li><a href="global.html#SoundVolume">SoundVolume</a></li><li><a href="global.html#Start">Start</a></li><li><a href="global.html#StopChannel">StopChannel</a></li><li><a href="global.html#StopMusic">StopMusic</a></li><li><a href="global.html#StringHeight">StringHeight</a></li><li><a href="global.html#StringWidth">StringWidth</a></li><li><a href="global.html#TFormFilter">TFormFilter</a></li><li><a href="global.html#TileBlock">TileBlock</a></li><li><a href="global.html#WriteFile">WriteFile</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Tue Jan 20 2026 18:20:33 GMT+0100 (Mitteleuropäische Normalzeit)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

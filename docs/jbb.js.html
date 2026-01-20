@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: jbb.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: jbb.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import { Mouse } from "./modules/mouse.js";
+import { Keyboard } from "./modules/keyboard.js";
+import { Font } from "./modules/fonts.js";
+import { Jmage } from "./modules/image.js";
+import { Canvas } from "./modules/canvas.js";
+import { Time } from "./modules/time.js";
+import { File } from "./modules/file.js";
+import { Sound } from "./modules/sound.js";
+import { Physics } from "./modules/physics.js";
+import { Maths } from "./modules/maths.js";
+import { Joy } from "./modules/joy.js";
+import { Stubs } from "./modules/stubs.js";
+
+/**
+ * The main jBB engine class that orchestrates all modules and provides the core object-oriented API.
+ */
+export class jBB{
+	/** @type {function} */
+	mainloop;
+	/** @private */
+	#mouse; #keyboard; #joy; #stubs;
+	/** @private */
+	#canvas; #file; #sound; #physics; 
+	/** @private */
+	#currentFont;
+	/** @private */
+	#time; #math;
+	/** @private */
+	#loadingPromises = [];
+	/** @private */
+	#loopStarted = false;
+
+	/**
+	 * @param {number} [width=640] The width of the main graphics canvas.
+	 * @param {number} [height=480] The height of the main graphics canvas.
+	 * @param {function} mainLoop The user-defined function that will be called every frame.
+	 */
+	constructor(width = 640, height = 480, mainLoop){
+		this.mainloop = mainLoop;
+
+		this.#canvas = new Canvas(width, height);
+
+		this.#mouse = new Mouse();
+		this.#keyboard = new Keyboard();
+		this.#time = new Time();
+		this.#joy = new Joy();
+		this.#file = new File();
+		this.#sound = new Sound();
+		this.#math = new Maths();
+		this.#physics = new Physics();
+		this.#stubs = new Stubs();
+	}
+
+	/**
+	 * Starts the game engine. This should be called after all initial assets have been queued for loading.
+	 * It will display a "Loading..." message, wait for all assets to load, and then start the main loop.
+	 */
+	start() {
+		if (this.#loopStarted) return;
+		this.#loopStarted = true;
+
+		(async () => {
+			this.#canvas.context.save();
+			this.#canvas.context.fillStyle = 'gray';
+			this.#canvas.context.fillRect(0, 0, this.#canvas.width, this.#canvas.height);
+			this.#canvas.context.fillStyle = 'white';
+			this.#canvas.context.font = '20px sans-serif';
+			this.#canvas.context.textAlign = 'center';
+			this.#canvas.context.fillText("Loading...", this.#canvas.width / 2, this.#canvas.height / 2);
+			this.#canvas.context.restore();
+
+			try {
+				await Promise.all(this.#loadingPromises);
+			} catch (error) {
+				console.error("jBB: Error during asset loading.", error);
+				this.#canvas.context.save();
+				this.#canvas.context.fillStyle = 'red';
+				this.#canvas.context.font = '20px sans-serif';
+				this.#canvas.context.textAlign = 'center';
+				this.#canvas.context.fillText("Error loading assets. Check console.", this.#canvas.width / 2, this.#canvas.height / 2 + 30);
+				this.#canvas.context.restore();
+				return;
+			}
+
+			this.#canvas.element.focus();
+			window.requestAnimationFrame(this.render.bind(this));
+		})();
+	}
+
+	/**
+	 * The active 2D rendering context.
+	 * @returns {CanvasRenderingContext2D}
+	 */
+	get canvas(){
+		return this.#canvas.context;
+	}
+
+	/**
+	 * @private
+	 * The core render loop that calls the user's mainloop and performs per-frame cleanup.
+	 */
+	render(){
+		window.requestAnimationFrame(this.render.bind(this));
+
+		this.#joy.update(); // Poll gamepad state each frame
+		this.mainloop();
+
+		this.#keyboard.clearHits();
+		this.#mouse.clearHits();
+	}
+
+	/**
+	 * This command will wipe the canvas clean of any graphics or text present and reset the canvas back to the color defined in the ClsColor command
+	 */
+	cls(){
+		this.#canvas.context.fillStyle = this.#canvas.clsColor.rgba();
+		this.#canvas.context.setTransform(1, 0, 0, 1, 0, 0);
+		this.#canvas.context.fillRect(0, 0, this.#canvas.width, this.#canvas.height);
+	}
+
+	/**
+	 * Sets the color used by the `cls()` command.
+	 * @param {number} [red=0] The red component (0-255).
+	 * @param {number} [green=0] The green component (0-255).
+	 * @param {number} [blue=0] The blue component (0-255).
+	 */
+	clsColor(red = 0, green = 0, blue = 0){
+		this.#canvas.clsColor.set(red, green, blue, 1.0);
+	}
+
+	/**
+	 * This command sets the drawing color (using RGB values) for all subsequent drawing commands (Line, Rect, Text, etc.).
+	 * 
+	 * @param {number} [red=255] The red component (0-255).
+	 * @param {number} [green=255] The green component (0-255).
+	 * @param {number} [blue=255] The blue component (0-255).
+	 * @param {number} [alpha=255] The alpha component (0-255 or 0.0-1.0).
+	 */
+	color(red = 255, green = 255, blue = 255, alpha = 255){
+		this.#canvas.drawColor.set(red, green, blue, alpha);
+		this.#canvas.context.fillStyle = this.#canvas.drawColor.rgba();
+		this.#canvas.context.strokeStyle = this.#canvas.drawColor.rgba();
+	}
+
+	/**
+	 * Returns the width of the main graphics canvas.
+	 * @returns {number}
+	 */
+	graphicsWidth(){
+		return this.#canvas.width;
+	}
+
+	/**
+	 * Returns the height of the main graphics canvas.
+	 * @returns {number}
+	 */
+	graphicsHeight(){
+		return this.#canvas.height;
+	}
+
+	/**
+	 * Enables or disables image smoothing (bilinear filtering) for scaled images.
+	 * @param {boolean} [value=false] True to enable smoothing, false to disable it (pixelated look).
+	 */
+	tFormFilter(value = false){
+		this.#canvas.context.imageSmoothingEnabled = value;
+	}
+
+	/**
+	 * Sets the composition mode for all subsequent drawing operations.
+	 * @param {string} mode The blend mode to apply (e.g., "add", "multiply", "screen").
+	 */
+	setBlendMode(mode) {
+		this.#canvas.setBlendMode(mode);
+	}
+
+	/**
+	 * Sets the current drawing buffer to an image or the backbuffer.
+	 * @param {Jmage | null} buffer The Jmage instance to use as a buffer, or null to reset to the screen.
+	 */
+	setBuffer(buffer) {
+		this.#canvas.setTarget(buffer);
+	}
+
+	/**
+	 * Returns a token representing the main screen buffer.
+	 * @returns {null} A null value representing the backbuffer.
+	 */
+	backBuffer() {
+		return null;
+	}
+
+	/**
+	 * Creates a new, blank, drawable image.
+	 * @param {number} width The width of the image.
+	 * @param {number} height The height of the image.
+	 * @returns {Jmage} A new Jmage instance.
+	 */
+	createImage(width, height) {
+		let img = new Jmage(this);
+		img.createBlank(width, height);
+		return img;
+	}
+
+	/**
+	 * Grabs a portion of the current drawing buffer into an existing image.
+	 * The grab area is defined by the target image's dimensions.
+	 * @param {Jmage} targetImage The destination image to copy the pixels to.
+	 * @param {number} x The top-left x-coordinate of the grab area in the source buffer.
+	 * @param {number} y The top-left y-coordinate of the grab area in the source buffer.
+	 */
+	grabImage(targetImage, x, y) {
+		const bufferCtx = targetImage.getBufferContext();
+		bufferCtx.drawImage(this.#canvas.context.canvas, x, y, targetImage.width, targetImage.height, 0, 0, targetImage.width, targetImage.height);
+	}
+
+	/**
+	 * Creates a brush object from a tileset image for use with TileBlock.
+	 * @param {Jmage} tilesetImage The image containing the tiles.
+	 * @param {number} tileWidth The width of a single tile.
+	 * @param {number} tileHeight The height of a single tile.
+	 * @returns {object|null} A brush object or null if the image is invalid.
+	 */
+	loadBrush(tilesetImage, tileWidth, tileHeight) {
+		if (!tilesetImage || !tilesetImage.width) return null;
+		return {
+			image: tilesetImage,
+			tileWidth: tileWidth,
+			tileHeight: tileHeight,
+			tilesPerRow: Math.floor(tilesetImage.width / tileWidth)
+		};
+	}
+
+	/**
+	 * Draws a map of tiles using a specified brush.
+	 * @param {object} brush The brush object created by LoadBrush.
+	 * @param {Array&lt;Array&lt;number>>} mapData A 2D array of tile IDs. Tile ID 0 is considered empty.
+	 * @param {number} [destX=0] The top-left X screen coordinate to start drawing the map.
+	 * @param {number} [destY=0] The top-left Y screen coordinate to start drawing the map.
+	 */
+	tileBlock(brush, mapData, destX = 0, destY = 0) {
+		if (!brush || !mapData || !brush.image.el) return;
+
+		const context = this.#canvas.context;
+		const tileset = brush.image.el;
+
+		for (let row = 0; row &lt; mapData.length; row++) {
+			for (let col = 0; col &lt; mapData[row].length; col++) {
+				const tileID = mapData[row][col];
+				if (tileID &lt;= 0) continue; // 0 or less is an empty tile
+
+				const tileIndex = tileID - 1; // Map is 1-based, tile indices are 0-based
+				const sourceX = (tileIndex % brush.tilesPerRow) * brush.tileWidth;
+				const sourceY = Math.floor(tileIndex / brush.tilesPerRow) * brush.tileHeight;
+
+				context.drawImage(tileset, sourceX, sourceY, brush.tileWidth, brush.tileHeight, destX + (col * brush.tileWidth), destY + (row * brush.tileHeight), brush.tileWidth, brush.tileHeight);
+			}
+		}
+	}
+
+	/**
+	 * This command will draw a rectangle in the current drawing Color starting at the location specified. 
+	 * The last parameter determines if the rectangle is filled or just a 'box'.
+	 * 
+	 * @param {*} x x coordinate to begin drawing the rectangle 
+	 * @param {*} y y coordinate to begin drawing the rectangle 
+	 * @param {*} width how wide to make the rectangle in pixels
+	 * @param {*} height how tall to make the rectangle in pixels 
+	 * @param {*} filled False for unfilled and True for filled 
+	 */
+	rect(x, y, width, height, filled = true){
+		if(filled){
+			this.#canvas.context.fillRect(x, y, width, height);
+		}else{
+			this.#canvas.context.strokeRect(x, y, width, height);
+		}
+	}
+
+	/**
+	 * This command draws a line, in the current drawing color, from one point on the 
+	 * screen to another (from the x,y to x1,y1 location).
+	 * 
+	 * @param {number} x1 The starting x-coordinate of the line.
+	 * @param {number} y1 The starting y-coordinate of the line.
+	 * @param {number} x2 The ending x-coordinate of the line.
+	 * @param {number} y2 The ending y-coordinate of the line.
+	 */
+	line(x1, y1, x2, y2){
+		this.#canvas.context.beginPath();
+		this.#canvas.context.moveTo(x1, y1);
+		this.#canvas.context.lineTo(x2, y2);
+		this.#canvas.context.stroke();
+	}
+
+	/**
+	 * Used to put a pixel on the screen defined by its x, y location in the current 
+	 * drawing color.
+	 * @param {number} x The x-coordinate of the pixel.
+	 * @param {number} y The y-coordinate of the pixel.
+	 */
+	plot(x, y){
+		this.rect(x, y, 1, 1, true);
+	}
+
+	/**
+	 * Reads the color data of a single pixel from the main canvas.
+	 * @param {number} x The x-coordinate of the pixel.
+	 * @param {number} y The y-coordinate of the pixel.
+	 * @returns {{r: number, g: number, b: number, a: number}} An object with the RGBA color components.
+	 */
+	readPixel(x, y) {
+		return this.#canvas.readPixel(x, y);
+	}
+
+	/**
+	 * Use this to draw an oval shape at the screen coordinates of your choice. You can make the oval solid or hollow.
+	 * @param {number} x The x-coordinate of the oval's center.
+	 * @param {number} y The y-coordinate of the oval's center.
+	 * @param {*} width how wide to make the oval 
+	 * @param {*} height how high to make the oval 
+	 * @param {*} filled true to make the oval filled
+	 */
+	oval(x, y, width, height, filled = true){
+		this.#canvas.context.beginPath();
+		this.#canvas.context.ellipse(x, y, width, height, 0, 0, 2 * Math.PI, false);
+		if(filled){
+			this.#canvas.context.fill();
+		}else{
+			this.#canvas.context.stroke();
+		}
+		this.#canvas.context.closePath();
+	}
+
+	/**
+	 * Enables or disables automatic centering of the handle for all subsequently loaded images.
+	 * @param {boolean} [value=false] True to enable auto-mid-handling, false to disable.
+	 */
+	autoMidHandle(value = false){
+		this.#canvas.autoMidHandle = value;
+	}
+
+	/**
+	 * @private
+	 * Checks if auto-mid-handling is globally enabled.
+	 * @returns {boolean}
+	 */
+	isAutoMidHandle(){
+		return this.#canvas.autoMidHandle;
+	}
+
+	/**
+	 * Sets the handle of a specific image to its center.
+	 * @param {Jmage} img The Jmage object to modify.
+	 */
+	midHandleImage(img){
+		if(img &amp;&amp; typeof img.midHandle === 'function'){
+			img.midHandle();
+		}
+	}
+
+	/**
+	 * Loads a static image and queues it for processing.
+	 * @param {string} path The path to the image file.
+	 * @returns {Jmage} A Jmage instance representing the image.
+	 */
+	loadImage(path){
+		const img = new Jmage(this);
+		const loadingPromise = img.load(path);
+		this.#loadingPromises.push(loadingPromise);
+		return img;
+	}
+
+	/**
+	 * Loads an animated image (spritesheet) and queues it for processing.
+	 * @param {string} path The path to the spritesheet file.
+	 * @param {number} width The width of a single frame.
+	 * @param {number} height The height of a single frame.
+	 * @param {number} first The index of the first frame in the animation sequence (1-based).
+	 * @param {number} count The total number of frames in the animation sequence.
+	 * @returns {Jmage} A Jmage instance representing the animated image.
+	 */
+	loadAnimImage(path, width, height, first, count){
+		const img = new Jmage(this);
+		// loadAnim() now returns a promise
+		const loadingPromise = img.loadAnim(path, width, height, first, count);
+		this.#loadingPromises.push(loadingPromise);
+		return img;
+	}
+
+	/**
+	 * Draws an image to the active buffer.
+	 * @param {Jmage} img The Jmage object to draw.
+	 * @param {number} x The x-coordinate to draw the image at (relative to its handle).
+	 * @param {number} y The y-coordinate to draw the image at (relative to its handle).
+	 * @param {number} [frame] The animation frame to draw (1-based).
+	 */
+	drawImage(img, x, y, frame){
+		img.draw(x, y, frame);
+	}
+
+	/**
+	 * rotate an image a specified number of degrees
+	 * @param {Jmage} img The Jmage object to rotate.
+	 * @param {number} value The rotation in degrees.
+	 */
+	rotateImage(img, value){
+		img.rotate(value);
+	}
+
+	/**
+	 * Returns the width of a single frame of an image.
+	 * @param {Jmage} image The Jmage object.
+	 * @returns {number} The width in pixels.
+	 */
+	imageWidth(image){
+		return image.width;
+	}
+
+	/**
+	 * Returns the height of a single frame of an image.
+	 * @param {Jmage} image The Jmage object.
+	 * @returns {number} The height in pixels.
+	 */
+	imageHeight(image){
+		return image.height;
+	}
+
+	/**
+	 * Returns the handle of an image.
+	 * @param {Jmage} image The Jmage object.
+	 * @returns {{x: number, y: number}} An object containing the x and y coordinates of the handle.
+	 */
+	imageHandle(image){
+		return image.handle;
+	}
+
+	/**
+	 * Returns the x-coordinate of an image's handle.
+	 * @param {Jmage} image The Jmage object.
+	 * @returns {number} The x-coordinate of the handle.
+	 */
+	imageXHandle(image){
+		return image.handle.x;
+	}
+
+	/**
+	 * Returns the y-coordinate of an image's handle.
+	 * @param {Jmage} image The Jmage object.
+	 * @returns {number} The y-coordinate of the handle.
+	 */
+	imageYHandle(image){
+		return image.handle.y;
+	}
+
+	/**
+	 * Rescales an image. Using a negative value will flip the image on that axis.
+	 * @param {Jmage} image The Jmage object to scale.
+	 * @param {number} x The horizontal scale factor (e.g., 1.0 for 100%, 2.0 for 200%).
+	 * @param {number} y The vertical scale factor.
+	 */
+	scaleImage(image, x, y){
+		image.scale(x, y);
+	}
+
+	/**
+	 * Creates a copy of an image. The new image shares the same underlying pixel data
+	 * but has its own independent transformation properties (handle, scale, rotation).
+	 * @param {Jmage} img The Jmage instance to copy.
+	 * @returns {Jmage} A new Jmage instance.
+	 */
+	copyImage(img){
+		if (typeof img.clone !== 'function') throw new Error("Object is not cloneable, it is missing a clone() method.");
+		return img.clone();
+	}
+
+	/**
+	 * Loads a font file and queues it for processing.
+	 * @param {string} path The path to the font file (e.g., .ttf, .woff).
+	 * @param {string} name The name to assign to the font-family for CSS.
+	 * @returns {Font} A Font instance representing the loaded font.
+	 */
+	loadFont(path, name){
+		const font = new Font(this);
+		const loadingPromise = font.load(path, name);
+		this.#loadingPromises.push(loadingPromise);
+		return font;
+	}
+
+	/**
+	 * Sets the active font for subsequent text drawing operations.
+	 * @param {Font} fnt The Font object to set as active.
+	 * @param {number} size The font size in pixels.
+	 * @param {boolean} [bold=false] True to make the font bold.
+	 * @param {boolean} [italic=false] True to make the font italic.
+	 * @param {number} [weight=0] An optional font weight (e.g., 700). Overrides `bold` if set.
+	 */
+	setFont(fnt, size, bold = false, italic = false, weight = 0){
+		this.#currentFont = fnt;
+		fnt.set(size, bold, italic, weight);
+	}
+
+	/**
+	 * Draws text to the screen using the currently active font.
+	 * @param {number} x The x-coordinate to draw the text at.
+	 * @param {number} y The y-coordinate to draw the text at.
+	 * @param {string} value The text to draw.
+	 */
+	text(x, y, value){
+		this.#currentFont.text(x, y, value);
+	}
+
+	fontWidth(){
+		if(this.#currentFont) return this.#currentFont.width();
+		return 0;
+	}
+
+	fontHeight(){
+		if(this.#currentFont) return this.#currentFont.height();
+		return 0;
+	}
+
+	/**
+	 * Measures the width of a string using the currently active font.
+	 * @param {string} value The string to measure.
+	 * @returns {number|undefined} The width in pixels, or undefined if no font is set.
+	 */
+	stringWidth(value){
+		if(this.#currentFont) return this.#currentFont.width(value);
+	}
+
+	/**
+	 * Measures the height of a string using the currently active font.
+	 * @param {string} value The string to measure.
+	 * @returns {number|undefined} The height in pixels, or undefined if no font is set.
+	 */
+	stringHeight(value){
+		if(this.#currentFont) return this.#currentFont.height(value);
+	}
+
+	/**
+	 * Returns the x-coordinate of the mouse relative to the canvas.
+	 * @returns {number} The x-coordinate.
+	 */
+	mouseX(){
+		if (!this.#canvas || !this.#canvas.element) return 0;
+		const rect = this.#canvas.element.getBoundingClientRect();
+		return (this.#mouse.x - rect.left) * (this.#canvas.width / rect.width);
+	}
+
+	/**
+	 * Returns the y-coordinate of the mouse relative to the canvas.
+	 * @returns {number}
+	 */
+	mouseY(){
+		if (!this.#canvas || !this.#canvas.element) return 0;
+		const rect = this.#canvas.element.getBoundingClientRect();
+		return (this.#mouse.y - rect.top) * (this.#canvas.height / rect.height);
+	}
+
+	/**
+	 * Checks if a specific mouse button is currently held down.
+	 * @param {number} button The button to check (1=left, 2=right, 3=middle).
+	 * @returns {boolean}
+	 */
+	mouseDown(button) {
+		return this.#mouse.mouseDown(button);
+	}
+
+	/**
+	 * Checks if a specific mouse button was just pressed in the current frame.
+	 * @param {number} button The button to check (1=left, 2=right, 3=middle).
+	 * @returns {boolean}
+	 */
+	mouseHit(button) {
+		return this.#mouse.mouseHit(button);
+	}
+
+	/**
+	 * Checks if a specific key is currently being held down.
+	 * @param {number} keyCode The key code to check.
+	 * @returns {boolean} True if the key is down, false otherwise.
+	 */
+	keyDown(keyCode) {
+		return this.#keyboard.keyDown(keyCode);
+	}
+
+	/**
+	 * Checks if a specific key was pressed once. This is true for only one frame.
+	 * @param {number} keyCode The key code to check.
+	 * @returns {boolean} True if the key was just hit, false otherwise.
+	 */
+	keyHit(keyCode) {
+		return this.#keyboard.keyHit(keyCode);
+	}
+
+	joyType(padIndex = 0) {
+		return this.#joy.joyType(padIndex);
+	}
+
+	joyDown(button, padIndex = 0) {
+		return this.#joy.joyDown(button, padIndex);
+	}
+
+	joyX(padIndex = 0) {
+		return this.#joy.joyX(padIndex);
+	}
+
+	joyY(padIndex = 0) {
+		return this.#joy.joyY(padIndex);
+	}
+
+	openFile(path) {
+		return this.#file.openFile(path);
+	}
+
+	readFile(handle) {
+		return this.#file.readFile(handle);
+	}
+
+	writeFile(handle, text) {
+		return this.#file.writeFile(handle, text);
+	}
+
+	closeFile(handle) {
+		return this.#file.closeFile(handle);
+	}
+
+	filePos(handle) {
+		return this.#file.filePos(handle);
+	}
+
+	seekFile(handle, pos) {
+		return this.#file.seekFile(handle, pos);
+	}
+
+	eof(handle) {
+		return this.#file.eof(handle);
+	}
+
+	readDir(path) {
+		return this.#file.readDir(path);
+	}
+
+	nextFile(handle) {
+		return this.#file.nextFile(handle);
+	}
+
+	closeDir(handle) {
+		return this.#file.closeDir(handle);
+	}
+
+	currentDir() {
+		return this.#file.currentDir();
+	}
+
+	changeDir(path) {
+		return this.#file.changeDir(path);
+	}
+
+	createDir(path) {
+		return this.#file.createDir(path);
+	}
+
+	deleteDir(path) {
+		return this.#file.deleteDir(path);
+	}
+
+	fileType(path) {
+		return this.#file.fileType(path);
+	}
+
+	fileSize(path) {
+		return this.#file.fileSize(path);
+	}
+
+	copyFile(sourcePath, destPath) {
+		return this.#file.copyFile(sourcePath, destPath);
+	}
+
+	deleteFile(path){
+		return this.#file.deleteFile(path);
+	}
+
+	fileExists(path) {
+		return this.#file.fileExists(path);
+	}
+
+	downloadFile(path, downloadName) {
+		return this.#file.downloadFile(path, downloadName);
+	}
+
+	async loadTextFile(path) {
+		return this.#file.loadTextFile(path);
+	}
+
+	loadSound(path) {
+		const { handle, promise } = this.#sound.loadSound(path);
+		if (promise) this.#loadingPromises.push(promise);
+		return handle;
+	}
+
+	freeSound(handle) {
+		this.#sound.freeSound(handle);
+	}
+
+	loopSound(handle, loop) {
+		this.#sound.loopSound(handle, loop);
+	}
+
+	soundVolume(handle, volume) {
+		this.#sound.soundVolume(handle, volume);
+	}
+
+	soundPitch(handle, pitch) {
+		this.#sound.soundPitch(handle, pitch);
+	}
+
+	soundPan(handle, pan) {
+		this.#sound.soundPan(handle, pan);
+	}
+
+	playSound(soundHandle) {
+		return this.#sound.playSound(soundHandle);
+	}
+
+	stopChannel(channelHandle) {
+		this.#sound.stopChannel(channelHandle);
+	}
+
+	channelVolume(channelHandle, volume) {
+		this.#sound.channelVolume(channelHandle, volume);
+	}
+
+	channelPlaying(channelHandle) {
+		return this.#sound.channelPlaying(channelHandle);
+	}
+
+	playMusic(path, loop) {
+		this.#sound.playMusic(path, loop);
+	}
+
+	stopMusic() {
+		this.#sound.stopMusic();
+	}
+
+	pauseMusic() {
+		this.#sound.pauseMusic();
+	}
+
+	resumeMusic() {
+		this.#sound.resumeMusic();
+	}
+
+	musicVolume(volume) {
+		this.#sound.musicVolume(volume);
+	}
+
+	rectsOverlap(x1, y1, w1, h1, x2, y2, w2, h2) {
+		return this.#physics.rectsOverlap(x1, y1, w1, h1, x2, y2, w2, h2);
+	}
+
+	/**
+	 * Checks if two images, placed at specific coordinates, overlap based on their bounding boxes.
+	 * @returns {boolean} True if the images' bounding boxes overlap, false otherwise.
+	 */
+	imagesOverlap(img1, x1, y1, img2, x2, y2) {
+		return this.#physics.imagesOverlap(img1, x1, y1, img2, x2, y2);
+	}
+
+	imagesCollide(img1, x1, y1, frame1, img2, x2, y2, frame2) {
+		return this.#physics.imagesCollide(img1, x1, y1, frame1, img2, x2, y2, frame2);
+	}
+
+	millisecs(){
+		return this.#time.millisecs();
+	}
+
+	rand(min, max){
+		return this.#math.rand(min, max);
+	}
+
+	pi(){
+		return this.#math.pi();
+	}
+
+	float(value){
+		return this.#math.float(value);
+	}
+
+	int(value){
+		return this.#math.int(value);
+	}
+
+	// ============ stubs for non-implementable functions ============
+	execute(command) {
+		this.#stubs.execute(command);
+	}
+
+	getEnv(variable) {
+		return this.#stubs.getEnv(variable);
+	}
+
+	setEnv(variable, value) {
+		this.#stubs.setEnv(variable, value);
+	}
+
+	playCDTrack(track, mode) {
+		this.#stubs.playCDTrack(track, mode);
+	}
+
+	stopCD() {
+		this.#stubs.stopCD();
+	}
+
+	callDLL(dllFile, functionName, ...args) {
+		return this.#stubs.callDLL(dllFile, functionName, ...args);
+	}
+}</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="Canvas.html">Canvas</a></li><li><a href="global.html#Color">Color</a></li><li><a href="File.html">File</a></li><li><a href="Font.html">Font</a></li><li><a href="Jmage.html">Jmage</a></li><li><a href="Joy.html">Joy</a></li><li><a href="Keyboard.html">Keyboard</a></li><li><a href="Maths.html">Maths</a></li><li><a href="Mouse.html">Mouse</a></li><li><a href="Physics.html">Physics</a></li><li><a href="Sound.html">Sound</a></li><li><a href="Stubs.html">Stubs</a></li><li><a href="Time.html">Time</a></li><li><a href="jBB.html">jBB</a></li></ul><h3>Global</h3><ul><li><a href="global.html#AutoMidHandle">AutoMidHandle</a></li><li><a href="global.html#BackBuffer">BackBuffer</a></li><li><a href="global.html#ChangeDir">ChangeDir</a></li><li><a href="global.html#ChannelPlaying">ChannelPlaying</a></li><li><a href="global.html#ChannelVolume">ChannelVolume</a></li><li><a href="global.html#CloseDir">CloseDir</a></li><li><a href="global.html#CloseFile">CloseFile</a></li><li><a href="global.html#Cls">Cls</a></li><li><a href="global.html#ClsColor">ClsColor</a></li><li><a href="global.html#CopyFile">CopyFile</a></li><li><a href="global.html#CopyImage">CopyImage</a></li><li><a href="global.html#CreateDir">CreateDir</a></li><li><a href="global.html#CreateImage">CreateImage</a></li><li><a href="global.html#CreateType">CreateType</a></li><li><a href="global.html#CurrentDir">CurrentDir</a></li><li><a href="global.html#DeleteDir">DeleteDir</a></li><li><a href="global.html#DeleteFile">DeleteFile</a></li><li><a href="global.html#DownloadFile">DownloadFile</a></li><li><a href="global.html#DrawImage">DrawImage</a></li><li><a href="global.html#DrawText">DrawText</a></li><li><a href="global.html#Eof">Eof</a></li><li><a href="global.html#FileExists">FileExists</a></li><li><a href="global.html#FilePos">FilePos</a></li><li><a href="global.html#FileSize">FileSize</a></li><li><a href="global.html#FileType">FileType</a></li><li><a href="global.html#Float">Float</a></li><li><a href="global.html#FontHeight">FontHeight</a></li><li><a href="global.html#FontWidth">FontWidth</a></li><li><a href="global.html#FreeSound">FreeSound</a></li><li><a href="global.html#GrabImage">GrabImage</a></li><li><a href="global.html#Graphics">Graphics</a></li><li><a href="global.html#GraphicsHeight">GraphicsHeight</a></li><li><a href="global.html#GraphicsWidth">GraphicsWidth</a></li><li><a href="global.html#ImageHandle">ImageHandle</a></li><li><a href="global.html#ImageHeight">ImageHeight</a></li><li><a href="global.html#ImageWidth">ImageWidth</a></li><li><a href="global.html#ImageXHandle">ImageXHandle</a></li><li><a href="global.html#ImageYHandle">ImageYHandle</a></li><li><a href="global.html#ImagesCollide">ImagesCollide</a></li><li><a href="global.html#ImagesOverlap">ImagesOverlap</a></li><li><a href="global.html#Int">Int</a></li><li><a href="global.html#JoyDown">JoyDown</a></li><li><a href="global.html#JoyType">JoyType</a></li><li><a href="global.html#JoyX">JoyX</a></li><li><a href="global.html#JoyY">JoyY</a></li><li><a href="global.html#KeyDown">KeyDown</a></li><li><a href="global.html#KeyHit">KeyHit</a></li><li><a href="global.html#Line">Line</a></li><li><a href="global.html#LoadAnimImage">LoadAnimImage</a></li><li><a href="global.html#LoadBrush">LoadBrush</a></li><li><a href="global.html#LoadFont">LoadFont</a></li><li><a href="global.html#LoadImage">LoadImage</a></li><li><a href="global.html#LoadSound">LoadSound</a></li><li><a href="global.html#LoadTextFile">LoadTextFile</a></li><li><a href="global.html#LoopSound">LoopSound</a></li><li><a href="global.html#MidHandle">MidHandle</a></li><li><a href="global.html#Millisecs">Millisecs</a></li><li><a href="global.html#MouseDown">MouseDown</a></li><li><a href="global.html#MouseHit">MouseHit</a></li><li><a href="global.html#MouseX">MouseX</a></li><li><a href="global.html#MouseY">MouseY</a></li><li><a href="global.html#MusicVolume">MusicVolume</a></li><li><a href="global.html#NextFile">NextFile</a></li><li><a href="global.html#OpenFile">OpenFile</a></li><li><a href="global.html#Oval">Oval</a></li><li><a href="global.html#PauseMusic">PauseMusic</a></li><li><a href="global.html#Pi">Pi</a></li><li><a href="global.html#PlayMusic">PlayMusic</a></li><li><a href="global.html#PlaySound">PlaySound</a></li><li><a href="global.html#Plot">Plot</a></li><li><a href="global.html#Rand">Rand</a></li><li><a href="global.html#ReadDir">ReadDir</a></li><li><a href="global.html#ReadFile">ReadFile</a></li><li><a href="global.html#ReadPixel">ReadPixel</a></li><li><a href="global.html#Rect">Rect</a></li><li><a href="global.html#RectsOverlap">RectsOverlap</a></li><li><a href="global.html#ResumeMusic">ResumeMusic</a></li><li><a href="global.html#RotateImage">RotateImage</a></li><li><a href="global.html#ScaleImage">ScaleImage</a></li><li><a href="global.html#SeekFile">SeekFile</a></li><li><a href="global.html#SetBlendMode">SetBlendMode</a></li><li><a href="global.html#SetBuffer">SetBuffer</a></li><li><a href="global.html#SetFont">SetFont</a></li><li><a href="global.html#SoundPan">SoundPan</a></li><li><a href="global.html#SoundPitch">SoundPitch</a></li><li><a href="global.html#SoundVolume">SoundVolume</a></li><li><a href="global.html#Start">Start</a></li><li><a href="global.html#StopChannel">StopChannel</a></li><li><a href="global.html#StopMusic">StopMusic</a></li><li><a href="global.html#StringHeight">StringHeight</a></li><li><a href="global.html#StringWidth">StringWidth</a></li><li><a href="global.html#TFormFilter">TFormFilter</a></li><li><a href="global.html#TileBlock">TileBlock</a></li><li><a href="global.html#WriteFile">WriteFile</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Tue Jan 20 2026 18:20:33 GMT+0100 (Mitteleuropäische Normalzeit)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

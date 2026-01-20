@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: modules/physics.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: modules/physics.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * Provides functions for collision detection.
+ */
+export class Physics {
+
+    /**
+     * Checks if two axis-aligned rectangles overlap.
+     * @param {number} x1 X-coordinate of the first rectangle.
+     * @param {number} y1 Y-coordinate of the first rectangle.
+     * @param {number} w1 Width of the first rectangle.
+     * @param {number} h1 Height of the first rectangle.
+     * @param {number} x2 X-coordinate of the second rectangle.
+     * @param {number} y2 Y-coordinate of the second rectangle.
+     * @param {number} w2 Width of the second rectangle.
+     * @param {number} h2 Height of the second rectangle.
+     * @returns {boolean} True if the rectangles overlap, false otherwise.
+     */
+    rectsOverlap(x1, y1, w1, h1, x2, y2, w2, h2) {
+        // AABB collision detection
+        return x1 &lt; x2 + w2 &amp;&amp;
+               x1 + w1 > x2 &amp;&amp;
+               y1 &lt; y2 + h2 &amp;&amp;
+               y1 + h1 > y2;
+    }
+
+	/**
+	 * @private
+	 * Calculates the axis-aligned bounding box (AABB) for a transformed image.
+	 * @param {Jmage} img The image object.
+	 * @param {number} x The world x-coordinate of the image's handle.
+	 * @param {number} y The world y-coordinate of the image's handle.
+	 * @returns {{x: number, y: number, width: number, height: number}} The AABB.
+	 */
+	#getTransformedBoundingBox(img, x, y) {
+		const w = img.width;
+		const h = img.height;
+		const hx = img.handle.x;
+		const hy = img.handle.y;
+		const sx = img.scaleFactor.x;
+		const sy = img.scaleFactor.y;
+		const rad = img.rotation * Math.PI / 180;
+		const cos = Math.cos(rad);
+		const sin = Math.sin(rad);
+
+		const corners = [
+			{ x: -hx, y: -hy },
+			{ x: w - hx, y: -hy },
+			{ x: w - hx, y: h - hy },
+			{ x: -hx, y: h - hy }
+		];
+
+		let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+
+		corners.forEach(corner => {
+			const scaledX = corner.x * sx;
+			const scaledY = corner.y * sy;
+
+			const rotatedX = scaledX * cos - scaledY * sin;
+			const rotatedY = scaledX * sin + scaledY * cos;
+
+			const finalX = rotatedX + x;
+			const finalY = rotatedY + y;
+
+			minX = Math.min(minX, finalX);
+			maxX = Math.max(maxX, finalX);
+			minY = Math.min(minY, finalY);
+			maxY = Math.max(maxY, finalY);
+		});
+
+		return { x: minX, y: minY, width: maxX - minX, height: maxY - minY };
+	}
+
+    /**
+     * Checks if two images, placed at specific coordinates, overlap based on their bounding boxes.
+     * This check correctly handles scaled and rotated images by calculating their axis-aligned bounding box.
+     * @param {Jmage} img1 The first image object.
+     * @param {number} x1 The x-coordinate of the first image's handle.
+     * @param {number} y1 The y-coordinate of the first image's handle.
+     * @param {Jmage} img2 The second image object.
+     * @param {number} x2 The x-coordinate of the second image's handle.
+     * @param {number} y2 The y-coordinate of the second image's handle.
+     * @returns {boolean} True if the images' bounding boxes overlap, false otherwise.
+     */
+    imagesOverlap(img1, x1, y1, img2, x2, y2) {
+        if (!img1 || !img2 || !img1.width || !img2.width) {
+            return false; // One of the images is not loaded or invalid
+        }
+
+		const box1 = this.#getTransformedBoundingBox(img1, x1, y1);
+		const box2 = this.#getTransformedBoundingBox(img2, x2, y2);
+
+		return this.rectsOverlap(box1.x, box1.y, box1.width, box1.height, box2.x, box2.y, box2.width, box2.height);
+    }
+
+    /**
+     * Checks for pixel-perfect collision between two images, correctly handling translation, scaling, and rotation.
+     * @param {Jmage} img1 The first image object.
+     * @param {number} x1 The x-coordinate of the first image's handle.
+     * @param {number} y1 The y-coordinate of the first image's handle.
+     * @param {number} [frame1=1] The frame number for the first image.
+     * @param {Jmage} img2 The second image object.
+     * @param {number} x2 The x-coordinate of the second image's handle.
+     * @param {number} y2 The y-coordinate of the second image's handle.
+     * @param {number} [frame2=1] The frame number for the second image.
+     * @param {number} [alphaThreshold=128] The alpha value (0-255) above which a pixel is considered solid.
+     * @returns {boolean} True if any solid pixels overlap, false otherwise.
+     */
+    imagesCollide(img1, x1, y1, frame1 = 1, img2, x2, y2, frame2 = 1, alphaThreshold = 128) {
+        const box1 = this.#getTransformedBoundingBox(img1, x1, y1);
+        const box2 = this.#getTransformedBoundingBox(img2, x2, y2);
+        if (!this.rectsOverlap(box1.x, box1.y, box1.width, box1.height, box2.x, box2.y, box2.width, box2.height)) {
+            return false;
+        }
+
+        const data1 = img1.getImageData();
+        const data2 = img2.getImageData();
+        if (!data1 || !data2) return false; // Images not ready
+
+        const intersectX1 = Math.max(box1.x, box2.x);
+        const intersectY1 = Math.max(box1.y, box2.y);
+        const intersectX2 = Math.min(box1.x + box1.width, box2.x + box2.width);
+        const intersectY2 = Math.min(box1.y + box1.height, box2.y + box2.height);
+
+        const rad1 = -img1.rotation * Math.PI / 180;
+        const cos1 = Math.cos(rad1);
+        const sin1 = Math.sin(rad1);
+        const invScaleX1 = 1 / img1.scaleFactor.x;
+        const invScaleY1 = 1 / img1.scaleFactor.y;
+
+        const rad2 = -img2.rotation * Math.PI / 180;
+        const cos2 = Math.cos(rad2);
+        const sin2 = Math.sin(rad2);
+        const invScaleX2 = 1 / img2.scaleFactor.x;
+        const invScaleY2 = 1 / img2.scaleFactor.y;
+
+        const frame1Pos = img1.getFramePos(frame1 - 1);
+        const frame2Pos = img2.getFramePos(frame2 - 1);
+
+        for (let y = intersectY1; y &lt; intersectY2; y++) {
+            for (let x = intersectX1; x &lt; intersectX2; x++) {
+                const dx1 = x - x1, dy1 = y - y1;
+                const rotatedX1 = dx1 * cos1 - dy1 * sin1;
+                const rotatedY1 = dx1 * sin1 + dy1 * cos1;
+                const localX1 = (rotatedX1 * invScaleX1) + img1.handle.x;
+                const localY1 = (rotatedY1 * invScaleY1) + img1.handle.y;
+
+                const dx2 = x - x2, dy2 = y - y2;
+                const rotatedX2 = dx2 * cos2 - dy2 * sin2;
+                const rotatedY2 = dx2 * sin2 + dy2 * cos2;
+                const localX2 = (rotatedX2 * invScaleX2) + img2.handle.x;
+                const localY2 = (rotatedY2 * invScaleY2) + img2.handle.y;
+
+                if (localX1 >= 0 &amp;&amp; localX1 &lt; img1.width &amp;&amp; localY1 >= 0 &amp;&amp; localY1 &lt; img1.height &amp;&amp;
+                    localX2 >= 0 &amp;&amp; localX2 &lt; img2.width &amp;&amp; localY2 >= 0 &amp;&amp; localY2 &lt; img2.height) {
+
+                    const sourceX1 = frame1Pos.x + Math.floor(localX1);
+                    const sourceY1 = frame1Pos.y + Math.floor(localY1);
+                    const sourceX2 = frame2Pos.x + Math.floor(localX2);
+                    const sourceY2 = frame2Pos.y + Math.floor(localY2);
+
+                    const alpha1 = data1.data[(sourceY1 * data1.width + sourceX1) * 4 + 3];
+                    const alpha2 = data2.data[(sourceY2 * data2.width + sourceX2) * 4 + 3];
+
+                    if (alpha1 > alphaThreshold &amp;&amp; alpha2 > alphaThreshold) {
+                        return true; // Collision detected
+                    }
+                }
+            }
+        }
+
+        return false;
+    }
+}</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="Canvas.html">Canvas</a></li><li><a href="global.html#Color">Color</a></li><li><a href="File.html">File</a></li><li><a href="Font.html">Font</a></li><li><a href="Jmage.html">Jmage</a></li><li><a href="Joy.html">Joy</a></li><li><a href="Keyboard.html">Keyboard</a></li><li><a href="Maths.html">Maths</a></li><li><a href="Mouse.html">Mouse</a></li><li><a href="Physics.html">Physics</a></li><li><a href="Sound.html">Sound</a></li><li><a href="Stubs.html">Stubs</a></li><li><a href="Time.html">Time</a></li><li><a href="jBB.html">jBB</a></li></ul><h3>Global</h3><ul><li><a href="global.html#AutoMidHandle">AutoMidHandle</a></li><li><a href="global.html#BackBuffer">BackBuffer</a></li><li><a href="global.html#ChangeDir">ChangeDir</a></li><li><a href="global.html#ChannelPlaying">ChannelPlaying</a></li><li><a href="global.html#ChannelVolume">ChannelVolume</a></li><li><a href="global.html#CloseDir">CloseDir</a></li><li><a href="global.html#CloseFile">CloseFile</a></li><li><a href="global.html#Cls">Cls</a></li><li><a href="global.html#ClsColor">ClsColor</a></li><li><a href="global.html#CopyFile">CopyFile</a></li><li><a href="global.html#CopyImage">CopyImage</a></li><li><a href="global.html#CreateDir">CreateDir</a></li><li><a href="global.html#CreateImage">CreateImage</a></li><li><a href="global.html#CreateType">CreateType</a></li><li><a href="global.html#CurrentDir">CurrentDir</a></li><li><a href="global.html#DeleteDir">DeleteDir</a></li><li><a href="global.html#DeleteFile">DeleteFile</a></li><li><a href="global.html#DownloadFile">DownloadFile</a></li><li><a href="global.html#DrawImage">DrawImage</a></li><li><a href="global.html#DrawText">DrawText</a></li><li><a href="global.html#Eof">Eof</a></li><li><a href="global.html#FileExists">FileExists</a></li><li><a href="global.html#FilePos">FilePos</a></li><li><a href="global.html#FileSize">FileSize</a></li><li><a href="global.html#FileType">FileType</a></li><li><a href="global.html#Float">Float</a></li><li><a href="global.html#FontHeight">FontHeight</a></li><li><a href="global.html#FontWidth">FontWidth</a></li><li><a href="global.html#FreeSound">FreeSound</a></li><li><a href="global.html#GrabImage">GrabImage</a></li><li><a href="global.html#Graphics">Graphics</a></li><li><a href="global.html#GraphicsHeight">GraphicsHeight</a></li><li><a href="global.html#GraphicsWidth">GraphicsWidth</a></li><li><a href="global.html#ImageHandle">ImageHandle</a></li><li><a href="global.html#ImageHeight">ImageHeight</a></li><li><a href="global.html#ImageWidth">ImageWidth</a></li><li><a href="global.html#ImageXHandle">ImageXHandle</a></li><li><a href="global.html#ImageYHandle">ImageYHandle</a></li><li><a href="global.html#ImagesCollide">ImagesCollide</a></li><li><a href="global.html#ImagesOverlap">ImagesOverlap</a></li><li><a href="global.html#Int">Int</a></li><li><a href="global.html#JoyDown">JoyDown</a></li><li><a href="global.html#JoyType">JoyType</a></li><li><a href="global.html#JoyX">JoyX</a></li><li><a href="global.html#JoyY">JoyY</a></li><li><a href="global.html#KeyDown">KeyDown</a></li><li><a href="global.html#KeyHit">KeyHit</a></li><li><a href="global.html#Line">Line</a></li><li><a href="global.html#LoadAnimImage">LoadAnimImage</a></li><li><a href="global.html#LoadBrush">LoadBrush</a></li><li><a href="global.html#LoadFont">LoadFont</a></li><li><a href="global.html#LoadImage">LoadImage</a></li><li><a href="global.html#LoadSound">LoadSound</a></li><li><a href="global.html#LoadTextFile">LoadTextFile</a></li><li><a href="global.html#LoopSound">LoopSound</a></li><li><a href="global.html#MidHandle">MidHandle</a></li><li><a href="global.html#Millisecs">Millisecs</a></li><li><a href="global.html#MouseDown">MouseDown</a></li><li><a href="global.html#MouseHit">MouseHit</a></li><li><a href="global.html#MouseX">MouseX</a></li><li><a href="global.html#MouseY">MouseY</a></li><li><a href="global.html#MusicVolume">MusicVolume</a></li><li><a href="global.html#NextFile">NextFile</a></li><li><a href="global.html#OpenFile">OpenFile</a></li><li><a href="global.html#Oval">Oval</a></li><li><a href="global.html#PauseMusic">PauseMusic</a></li><li><a href="global.html#Pi">Pi</a></li><li><a href="global.html#PlayMusic">PlayMusic</a></li><li><a href="global.html#PlaySound">PlaySound</a></li><li><a href="global.html#Plot">Plot</a></li><li><a href="global.html#Rand">Rand</a></li><li><a href="global.html#ReadDir">ReadDir</a></li><li><a href="global.html#ReadFile">ReadFile</a></li><li><a href="global.html#ReadPixel">ReadPixel</a></li><li><a href="global.html#Rect">Rect</a></li><li><a href="global.html#RectsOverlap">RectsOverlap</a></li><li><a href="global.html#ResumeMusic">ResumeMusic</a></li><li><a href="global.html#RotateImage">RotateImage</a></li><li><a href="global.html#ScaleImage">ScaleImage</a></li><li><a href="global.html#SeekFile">SeekFile</a></li><li><a href="global.html#SetBlendMode">SetBlendMode</a></li><li><a href="global.html#SetBuffer">SetBuffer</a></li><li><a href="global.html#SetFont">SetFont</a></li><li><a href="global.html#SoundPan">SoundPan</a></li><li><a href="global.html#SoundPitch">SoundPitch</a></li><li><a href="global.html#SoundVolume">SoundVolume</a></li><li><a href="global.html#Start">Start</a></li><li><a href="global.html#StopChannel">StopChannel</a></li><li><a href="global.html#StopMusic">StopMusic</a></li><li><a href="global.html#StringHeight">StringHeight</a></li><li><a href="global.html#StringWidth">StringWidth</a></li><li><a href="global.html#TFormFilter">TFormFilter</a></li><li><a href="global.html#TileBlock">TileBlock</a></li><li><a href="global.html#WriteFile">WriteFile</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Tue Jan 20 2026 18:20:33 GMT+0100 (Mitteleuropäische Normalzeit)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>
