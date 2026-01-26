@@ -4,7 +4,7 @@ JBB is a minimalist JavaScript library designed for the quick and easy creation 
 
 The API is intentionally kept simple and is inspired by classic game development libraries to allow for a quick start.
 
-## ✨ Features
+## Features
 
 *   Easy initialization of a graphics canvas.
 *   Loading of images and tilesets.
@@ -12,7 +12,7 @@ The API is intentionally kept simple and is inspired by classic game development
 *   Efficient rendering of entire tilemaps.
 *   A straightforward main loop (game loop) for logic and rendering.
 
-## 🚀 Getting Started
+## Getting Started
 
 To get started with JBB, you only need an HTML file that loads your JavaScript file as a module, the `jbbp.js` library, and a tileset image.
 
@@ -84,7 +84,7 @@ Here is a simple example that shows how to draw a map on the screen. This exampl
     }
     ```
 
-## 📚 API Reference (Basics)
+## API Reference (Basics)
 
 *   `jbb.Graphics(width, height, loopFunction)`: Creates a canvas element and starts the main loop.
 *   `jbb.LoadImage(path)`: Loads an image file and returns an image object.
